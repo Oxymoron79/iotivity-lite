@@ -34,20 +34,23 @@ file(GLOB SRC_SERVER
   ${CMAKE_SOURCE_DIR}/../../api/*.c
   ${CMAKE_SOURCE_DIR}/../../port/linux/*.c
 )
-
 set(SRC_CLIENT ${SRC_SERVER})
 
 if(SECURE)
-  file(GLOB SRC_SECURE
-    ${CMAKE_SOURCE_DIR}/../../security/oc_[a-n]*.c
-    ${CMAKE_SOURCE_DIR}/../../security/oc_[p-z]*.c
+  file(GLOB SRC_DTLS
     ${CMAKE_SOURCE_DIR}/../../deps/mbedtls/library/[a-l]*.c
     ${CMAKE_SOURCE_DIR}/../../deps/mbedtls/library/md*.c
     ${CMAKE_SOURCE_DIR}/../../deps/mbedtls/library/[n-x]*.c
   )
-  list(REMOVE_ITEM SRC_SECURE
+  list(REMOVE_ITEM SRC_DTLS
     ${CMAKE_SOURCE_DIR}/../../deps/mbedtls/library/certs.c
     ${CMAKE_SOURCE_DIR}/../../deps/mbedtls/library/x509_crl.c
+  )
+  list(APPEND SRC_COMMON ${SRC_DTLS})
+
+  file(GLOB SRC_SECURE
+    ${CMAKE_SOURCE_DIR}/../../security/oc_[a-n]*.c
+    ${CMAKE_SOURCE_DIR}/../../security/oc_[p-z]*.c
   )
   list(APPEND SRC_SERVER ${SRC_SECURE})
   list(APPEND SRC_CLIENT ${SRC_SECURE})
