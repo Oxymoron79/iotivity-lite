@@ -128,7 +128,7 @@ target_compile_definitions(client-server-obj PRIVATE ${COMPILER_DEFS} "OC_CLIENT
 if(CLOUD)
   add_library(cloud-obj OBJECT ${SRC_CLOUD})
   target_include_directories(cloud-obj PRIVATE ${COMMON_INCLUDE_DIRS})
-  target_compile_definitions(cloud-obj PRIVATE ${COMPILER_DEFS} "OC_CLOUD" "OC_TCP" "OC_IPV4")
+  target_compile_definitions(cloud-obj PRIVATE ${COMPILER_DEFS} "OC_CLOUD")
 endif()
 
 # Libraries
