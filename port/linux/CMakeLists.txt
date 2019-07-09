@@ -45,6 +45,7 @@ if(SECURE)
   list(REMOVE_ITEM SRC_DTLS
     ${CMAKE_SOURCE_DIR}/../../deps/mbedtls/library/certs.c
     ${CMAKE_SOURCE_DIR}/../../deps/mbedtls/library/x509_crl.c
+    ${CMAKE_SOURCE_DIR}/../../deps/mbedtls/library/x509_csr.c
   )
   list(APPEND SRC_COMMON ${SRC_DTLS})
 
