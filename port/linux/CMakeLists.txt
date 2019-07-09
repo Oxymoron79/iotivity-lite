@@ -104,6 +104,9 @@ set(COMMON_INCLUDE_DIRS
 if(SECURE)
   list(APPEND COMMON_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/../../deps/mbedtls/include)
 endif()
+if(CLOUD)
+  set(CLOUD_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/../../api/cloud)
+endif()
 
 # Object libraries
 add_library(common-obj OBJECT ${SRC_COMMON})
