@@ -151,10 +151,10 @@ set_target_properties(server-shared PROPERTIES OUTPUT_NAME iotivity-constrained-
 set_property(TARGET server-shared PROPERTY SOVERSION ${PROJECT_VERSION_MAJOR})
 
 
-add_library(client-server-static STATIC $<TARGET_OBJECTS:common-obj> $<TARGET_OBJECTS:cloud-obj>)
+add_library(client-server-static STATIC $<TARGET_OBJECTS:common-obj> $<TARGET_OBJECTS:client-obj> $<TARGET_OBJECTS:cloud-obj>)
 set_target_properties(client-server-static PROPERTIES OUTPUT_NAME iotivity-constrained-client-server)
 
-add_library(client-server-shared SHARED $<TARGET_OBJECTS:common-obj> $<TARGET_OBJECTS:cloud-obj>)
+add_library(client-server-shared SHARED $<TARGET_OBJECTS:common-obj> $<TARGET_OBJECTS:client-obj> $<TARGET_OBJECTS:cloud-obj>)
 target_link_libraries(client-server-shared PUBLIC Threads::Threads)
 set_target_properties(client-server-shared PROPERTIES OUTPUT_NAME iotivity-constrained-client-server)
 set_property(TARGET client-server-shared PROPERTY SOVERSION ${PROJECT_VERSION_MAJOR})
