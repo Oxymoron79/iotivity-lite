@@ -8,6 +8,7 @@ option(PKI "Build with private key infrastructure." ON)
 option(CLOUD "Build with cloud support." ON)
 option(IPV4 "Build with IPv4 support." ON)
 option(TCP "Build with TCP support." ON)
+option(SAMPLES "Build sample applications." ON)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
@@ -163,10 +164,14 @@ target_link_libraries(client-server-shared PUBLIC Threads::Threads)
 set_target_properties(client-server-shared PROPERTIES OUTPUT_NAME iotivity-constrained-client-server)
 set_property(TARGET client-server-shared PROPERTY SOVERSION ${PROJECT_VERSION_MAJOR})
 
+# Sample applications
+if(SAMPLES)
+if(SECURE AND DYNAMIC)
 add_executable(onboarding-tool ${CMAKE_SOURCE_DIR}/../../onboarding_tool/obtmain.c)
 target_include_directories(onboarding-tool PRIVATE ${COMMON_INCLUDE_DIRS})
 target_compile_definitions(onboarding-tool PRIVATE ${COMPILER_DEFS} "OC_CLIENT")
 target_link_libraries(onboarding-tool PUBLIC client-static Threads::Threads m rt)
+endif()
 
 add_executable(server ${CMAKE_SOURCE_DIR}/../../apps/server_linux.c)
 target_include_directories(server PRIVATE ${COMMON_INCLUDE_DIRS})
@@ -177,6 +182,7 @@ add_executable(client ${CMAKE_SOURCE_DIR}/../../apps/client_linux.c)
 target_include_directories(client PRIVATE ${COMMON_INCLUDE_DIRS})
 target_compile_definitions(client PRIVATE ${COMPILER_DEFS} "OC_CLIENT")
 target_link_libraries(client PUBLIC client-static Threads::Threads m rt)
+endif() # SAMPLES
 
 # Header files
 file(GLOB HEADERS ${CMAKE_SOURCE_DIR}/../../include/*.h)
