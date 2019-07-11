@@ -182,7 +182,16 @@ target_link_libraries(client PUBLIC client-static Threads::Threads m rt)
 file(GLOB HEADERS ${CMAKE_SOURCE_DIR}/../../include/*.h)
 list(APPEND HEADERS ${CMAKE_SOURCE_DIR}/oc_config.h)
 
-### Generate pkg-config files
+# Generate pkg-config files
+set(prefix ${CMAKE_INSTALL_PREFIX})
+set(exec_prefix "\${prefix}")
+set(libdir "\${prefix}/${CMAKE_INSTALL_LIBDIR}")
+set(includedir "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
+set(version ${PROJECT_VERSION})
+foreach(cflag IN LISTS COMPILER_DEFS)
+  string(APPEND extra_cflags "-D${cflag} ")
+endforeach()
+
 configure_file(
   "iotivity-constrained-client.pc.in"
   "${GENERATED_DIR}/iotivity-constrained-client.pc"
