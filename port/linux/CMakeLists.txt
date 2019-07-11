@@ -15,7 +15,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 find_package(Threads REQUIRED)
 include(GNUInstallDirs)
 
-set(GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(MBEDTLS_DIR "${CMAKE_SOURCE_DIR}/../../deps/mbedtls")
 set(GTEST_DIR "${CMAKE_SOURCE_DIR}/../../deps/gtest")
 
@@ -200,27 +199,27 @@ endforeach()
 
 configure_file(
   "iotivity-constrained-client.pc.in"
-  "${GENERATED_DIR}/iotivity-constrained-client.pc"
+  "iotivity-constrained-client.pc"
   @ONLY
 )
-install(FILES ${GENERATED_DIR}/iotivity-constrained-client.pc
+install(FILES iotivity-constrained-client.pc
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
 )
 
 configure_file(
   "iotivity-constrained-server.pc.in"
-  "${GENERATED_DIR}/iotivity-constrained-server.pc"
+  "iotivity-constrained-server.pc"
   @ONLY
 )
-install(FILES ${GENERATED_DIR}/iotivity-constrained-server.pc
+install(FILES iotivity-constrained-server.pc
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
 )
 
 configure_file(
   "iotivity-constrained-client-server.pc.in"
-  "${GENERATED_DIR}/iotivity-constrained-client-server.pc"
+  "iotivity-constrained-client-server.pc"
   @ONLY
 )
-install(FILES ${GENERATED_DIR}/iotivity-constrained-client-server.pc
+install(FILES iotivity-constrained-client-server.pc
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
 )
