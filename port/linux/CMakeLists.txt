@@ -197,29 +197,18 @@ foreach(cflag IN LISTS COMPILER_DEFS)
   string(APPEND extra_cflags "-D${cflag} ")
 endforeach()
 
+set(PKG_CONFIG_FILES
+  iotivity-constrained-client.pc
+  iotivity-constrained-server.pc
+  iotivity-constrained-client-server.pc
+)
+foreach(pkg-config-file IN LISTS PKG_CONFIG_FILES)
 configure_file(
-  "iotivity-constrained-client.pc.in"
-  "iotivity-constrained-client.pc"
+  "${pkg-config-file}.in"
+  ${pkg-config-file}
   @ONLY
 )
-install(FILES iotivity-constrained-client.pc
-  DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
-)
-
-configure_file(
-  "iotivity-constrained-server.pc.in"
-  "iotivity-constrained-server.pc"
-  @ONLY
-)
-install(FILES iotivity-constrained-server.pc
-  DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
-)
-
-configure_file(
-  "iotivity-constrained-client-server.pc.in"
-  "iotivity-constrained-client-server.pc"
-  @ONLY
-)
-install(FILES iotivity-constrained-client-server.pc
+endforeach()
+install(FILES ${PKG_CONFIG_FILES}
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
 )
