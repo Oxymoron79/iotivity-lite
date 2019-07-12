@@ -11,6 +11,8 @@ option(TCP "Build with TCP support." ON)
 option(SAMPLES "Build sample applications." ON)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 
 find_package(Threads REQUIRED)
 include(GNUInstallDirs)
