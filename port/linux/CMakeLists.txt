@@ -156,7 +156,7 @@ set_target_properties(server-shared PROPERTIES OUTPUT_NAME iotivity-constrained-
 set_property(TARGET server-shared PROPERTY SOVERSION ${PROJECT_VERSION_MAJOR})
 
 
-set(client-server-lib-obj $<TARGET_OBJECTS:common-obj> $<TARGET_OBJECTS:client-obj>)
+set(client-server-lib-obj $<TARGET_OBJECTS:common-obj> $<TARGET_OBJECTS:client-server-obj>)
 if(CLOUD)
   list(APPEND client-server-lib-obj $<TARGET_OBJECTS:cloud-obj>)
 endif()
