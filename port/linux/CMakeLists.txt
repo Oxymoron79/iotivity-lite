@@ -23,55 +23,55 @@ set(GTEST_DIR "${CMAKE_SOURCE_DIR}/../../deps/gtest")
 
 # Gather source files
 file(GLOB SRC_COMMON
-  ${CMAKE_SOURCE_DIR}/../../util/*.c
-  ${CMAKE_SOURCE_DIR}/../../api/c-timestamp/timestamp_format.c
-  ${CMAKE_SOURCE_DIR}/../../api/c-timestamp/timestamp_valid.c
-  ${CMAKE_SOURCE_DIR}/../../api/c-timestamp/timestamp_parse.c
-  ${CMAKE_SOURCE_DIR}/../../deps/tinycbor/src/cborencoder.c
-  ${CMAKE_SOURCE_DIR}/../../deps/tinycbor/src/cborencoder_close_container_checked.c
-  ${CMAKE_SOURCE_DIR}/../../deps/tinycbor/src/cborparser.c
+  ../../util/*.c
+  ../../api/c-timestamp/timestamp_format.c
+  ../../api/c-timestamp/timestamp_valid.c
+  ../../api/c-timestamp/timestamp_parse.c
+  ../../deps/tinycbor/src/cborencoder.c
+  ../../deps/tinycbor/src/cborencoder_close_container_checked.c
+  ../../deps/tinycbor/src/cborparser.c
 )
 
 file(GLOB SRC_SERVER
-  ${CMAKE_SOURCE_DIR}/../../messaging/coap/*.c
-  ${CMAKE_SOURCE_DIR}/../../api/*.c
-  ${CMAKE_SOURCE_DIR}/../../port/linux/*.c
+  ../../messaging/coap/*.c
+  ../../api/*.c
+  ../../port/linux/*.c
 )
 set(SRC_CLIENT ${SRC_SERVER})
 
 if(SECURE)
   file(GLOB SRC_DTLS
-    ${CMAKE_SOURCE_DIR}/../../deps/mbedtls/library/[a-l]*.c
-    ${CMAKE_SOURCE_DIR}/../../deps/mbedtls/library/md*.c
-    ${CMAKE_SOURCE_DIR}/../../deps/mbedtls/library/[n-x]*.c
+    ../../deps/mbedtls/library/[a-l]*.c
+    ../../deps/mbedtls/library/md*.c
+    ../../deps/mbedtls/library/[n-x]*.c
   )
   list(REMOVE_ITEM SRC_DTLS
-    ${CMAKE_SOURCE_DIR}/../../deps/mbedtls/library/certs.c
-    ${CMAKE_SOURCE_DIR}/../../deps/mbedtls/library/x509_crl.c
-    ${CMAKE_SOURCE_DIR}/../../deps/mbedtls/library/x509_csr.c
+    ../../deps/mbedtls/library/certs.c
+    ../../deps/mbedtls/library/x509_crl.c
+    ../../deps/mbedtls/library/x509_csr.c
   )
   list(APPEND SRC_COMMON ${SRC_DTLS})
 
   file(GLOB SRC_SECURE
-    ${CMAKE_SOURCE_DIR}/../../security/oc_[a-n]*.c
-    ${CMAKE_SOURCE_DIR}/../../security/oc_[p-z]*.c
+    ../../security/oc_[a-n]*.c
+    ../../security/oc_[p-z]*.c
   )
   list(APPEND SRC_SERVER ${SRC_SECURE})
   list(APPEND SRC_CLIENT ${SRC_SECURE})
   if(DYNAMIC)
 	file(GLOB SRC_OBT
-      ${CMAKE_SOURCE_DIR}/../../security/oc_obt*.c
+      ../../security/oc_obt*.c
     )
     list(APPEND SRC_CLIENT ${SRC_OBT})
   else()
     list(APPEND SRC_COMMON
-      ${CMAKE_SOURCE_DIR}/../../deps/mbedtls/library/memory_buffer_alloc.c
+      ../../deps/mbedtls/library/memory_buffer_alloc.c
     )
   endif()
 endif()
 
 if(CLOUD)
-  file(GLOB SRC_CLOUD ${CMAKE_SOURCE_DIR}/../../api/cloud/*.c)
+  file(GLOB SRC_CLOUD ../../api/cloud/*.c)
 endif()
 
 # Compiler definitions
@@ -108,7 +108,7 @@ if(SECURE)
   include_directories(../../deps/mbedtls/include)
 endif()
 if(CLOUD)
-  set(CLOUD_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/../../api/cloud)
+  set(CLOUD_INCLUDE_DIRS ../../api/cloud)
 endif()
 
 # Object libraries
@@ -163,16 +163,16 @@ set_property(TARGET client-server-shared PROPERTY SOVERSION ${PROJECT_VERSION_MA
 # Sample applications
 if(SAMPLES)
 if(SECURE AND DYNAMIC)
-add_executable(onboarding-tool ${CMAKE_SOURCE_DIR}/../../onboarding_tool/obtmain.c)
+add_executable(onboarding-tool ../../onboarding_tool/obtmain.c)
 target_compile_definitions(onboarding-tool PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_CLIENT")
 target_link_libraries(onboarding-tool PUBLIC client-static Threads::Threads m rt)
 endif()
 
-add_executable(server ${CMAKE_SOURCE_DIR}/../../apps/server_linux.c)
+add_executable(server ../../apps/server_linux.c)
 target_compile_definitions(server PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_SERVER")
 target_link_libraries(server PUBLIC server-static Threads::Threads m rt)
 
-add_executable(client ${CMAKE_SOURCE_DIR}/../../apps/client_linux.c)
+add_executable(client ../../apps/client_linux.c)
 target_compile_definitions(client PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_CLIENT")
 target_link_libraries(client PUBLIC client-static Threads::Threads m rt)
 endif() # SAMPLES
@@ -189,48 +189,48 @@ if(UNIT_TESTS)
     list(APPEND TEST_COMPILE_OPTIONS "-fprofile-arcs" "-ftest-coverage")
     list(APPEND TEST_LINK_LIBS gcov)
   endif()
-  add_subdirectory("${CMAKE_SOURCE_DIR}/../../deps/gtest" "gtest")
+  add_subdirectory(../../deps/gtest gtest)
   macro(package_add_test TESTNAME)
     add_executable(${TESTNAME} ${ARGN})
     target_compile_options(${TESTNAME} PRIVATE ${TEST_COMPILE_OPTIONS})
     target_compile_features(${TESTNAME} PRIVATE cxx_nullptr)
     target_compile_definitions(${TESTNAME} PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_CLIENT" "OC_SERVER")
-    target_include_directories(${TESTNAME} SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/../../deps/gtest/include")
+    target_include_directories(${TESTNAME} SYSTEM PRIVATE ../../deps/gtest/include)
     target_include_directories(${TESTNAME} PRIVATE ../../messaging/coap)
     if(SECURE)
-      target_include_directories(${TESTNAME} PRIVATE "${CMAKE_SOURCE_DIR}/../../security")
+      target_include_directories(${TESTNAME} PRIVATE ../../security)
     endif()
     if(CLOUD)
-      target_include_directories(${TESTNAME} PRIVATE "${CMAKE_SOURCE_DIR}/../../api/cloud")
+      target_include_directories(${TESTNAME} PRIVATE ../../api/cloud)
     endif()
     target_link_libraries(${TESTNAME} PRIVATE ${TEST_LINK_LIBS})
     add_test(NAME ${TESTNAME} COMMAND ${TESTNAME})
     set_target_properties(${TESTNAME} PROPERTIES FOLDER unittests)
   endmacro()
 
-  file(GLOB SRC_APITEST ${CMAKE_SOURCE_DIR}/../../api/unittest/*.cpp)
+  file(GLOB SRC_APITEST ../../api/unittest/*.cpp)
   package_add_test(apitest ${SRC_APITEST})
 
-  file(GLOB SRC_PLATFORMTEST ${CMAKE_SOURCE_DIR}/../../port/unittest/*.cpp)
+  file(GLOB SRC_PLATFORMTEST ../../port/unittest/*.cpp)
   package_add_test(platformtest ${SRC_PLATFORMTEST})
 
-  file(GLOB SRC_MESSAGINGTEST ${CMAKE_SOURCE_DIR}/../../messaging/coap/unittest/*.cpp)
+  file(GLOB SRC_MESSAGINGTEST ../../messaging/coap/unittest/*.cpp)
   package_add_test(messagingtest ${SRC_MESSAGINGTEST})
 
   if(SECURE)
-    file(GLOB SRC_SECURITYTEST ${CMAKE_SOURCE_DIR}/../../security/unittest/*.cpp)
+    file(GLOB SRC_SECURITYTEST ../../security/unittest/*.cpp)
     package_add_test(securitytest ${SRC_SECURITYTEST})
   endif()
 
   if(CLOUD)
-    file(GLOB SRC_CLOUDTEST ${CMAKE_SOURCE_DIR}/../../api/cloud/unittest/*.cpp)
+    file(GLOB SRC_CLOUDTEST ../../api/cloud/unittest/*.cpp)
     package_add_test(cloudtest ${SRC_CLOUDTEST})
   endif()
 endif()
 
 # Header files
-file(GLOB HEADERS ${CMAKE_SOURCE_DIR}/../../include/*.h)
-list(APPEND HEADERS ${CMAKE_SOURCE_DIR}/oc_config.h)
+file(GLOB HEADERS ../../include/*.h)
+list(APPEND HEADERS oc_config.h)
 
 # Generate pkg-config files
 set(prefix ${CMAKE_INSTALL_PREFIX})
