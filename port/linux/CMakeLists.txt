@@ -163,9 +163,9 @@ set_property(TARGET client-server-shared PROPERTY SOVERSION ${PROJECT_VERSION_MA
 # Sample applications
 if(SAMPLES)
 if(SECURE AND DYNAMIC)
-add_executable(onboarding-tool ../../onboarding_tool/obtmain.c)
-target_compile_definitions(onboarding-tool PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_CLIENT")
-target_link_libraries(onboarding-tool PUBLIC client-static Threads::Threads m rt)
+add_executable(onboarding_tool ../../onboarding_tool/obtmain.c)
+target_compile_definitions(onboarding_tool PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_CLIENT")
+target_link_libraries(onboarding_tool PUBLIC client-static Threads::Threads m rt)
 endif()
 
 add_executable(server ../../apps/server_linux.c)
