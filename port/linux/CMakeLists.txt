@@ -102,14 +102,10 @@ if(TCP)
 endif()
 
 # Include directories
-set(COMMON_INCLUDE_DIRS
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/..
-  ${CMAKE_SOURCE_DIR}/../..
-  ${CMAKE_SOURCE_DIR}/../../include
-)
+include_directories(. .. ../.. ../../include)
+
 if(SECURE)
-  list(APPEND COMMON_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/../../deps/mbedtls/include)
+  include_directories(../../deps/mbedtls/include)
 endif()
 if(CLOUD)
   set(CLOUD_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/../../api/cloud)
@@ -117,24 +113,19 @@ endif()
 
 # Object libraries
 add_library(common-obj OBJECT ${SRC_COMMON})
-target_include_directories(common-obj PRIVATE ${COMMON_INCLUDE_DIRS})
 target_compile_definitions(common-obj PRIVATE ${PRIVATE_COMPILER_DEFS} ${PUBLIC_COMPILER_DEFS})
 
 add_library(client-obj OBJECT ${SRC_CLIENT})
-target_include_directories(client-obj PRIVATE ${COMMON_INCLUDE_DIRS})
 target_compile_definitions(client-obj PRIVATE ${PRIVATE_COMPILER_DEFS} ${PUBLIC_COMPILER_DEFS} "OC_CLIENT")
 
 add_library(server-obj OBJECT ${SRC_SERVER})
-target_include_directories(server-obj PRIVATE ${COMMON_INCLUDE_DIRS})
 target_compile_definitions(server-obj PRIVATE ${PRIVATE_COMPILER_DEFS} ${PUBLIC_COMPILER_DEFS} "OC_SERVER")
 
 add_library(client-server-obj OBJECT ${SRC_CLIENT})
-target_include_directories(client-server-obj PRIVATE ${COMMON_INCLUDE_DIRS})
 target_compile_definitions(client-server-obj PRIVATE ${PRIVATE_COMPILER_DEFS} ${PUBLIC_COMPILER_DEFS} "OC_CLIENT" "OC_SERVER")
 
 if(CLOUD)
   add_library(cloud-obj OBJECT ${SRC_CLOUD})
-  target_include_directories(cloud-obj PRIVATE ${COMMON_INCLUDE_DIRS})
   target_compile_definitions(cloud-obj PRIVATE ${PRIVATE_COMPILER_DEFS} ${PUBLIC_COMPILER_DEFS} "OC_CLOUD")
 endif()
 
@@ -173,18 +164,15 @@ set_property(TARGET client-server-shared PROPERTY SOVERSION ${PROJECT_VERSION_MA
 if(SAMPLES)
 if(SECURE AND DYNAMIC)
 add_executable(onboarding-tool ${CMAKE_SOURCE_DIR}/../../onboarding_tool/obtmain.c)
-target_include_directories(onboarding-tool PRIVATE ${COMMON_INCLUDE_DIRS})
 target_compile_definitions(onboarding-tool PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_CLIENT")
 target_link_libraries(onboarding-tool PUBLIC client-static Threads::Threads m rt)
 endif()
 
 add_executable(server ${CMAKE_SOURCE_DIR}/../../apps/server_linux.c)
-target_include_directories(server PRIVATE ${COMMON_INCLUDE_DIRS})
 target_compile_definitions(server PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_SERVER")
 target_link_libraries(server PUBLIC server-static Threads::Threads m rt)
 
 add_executable(client ${CMAKE_SOURCE_DIR}/../../apps/client_linux.c)
-target_include_directories(client PRIVATE ${COMMON_INCLUDE_DIRS})
 target_compile_definitions(client PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_CLIENT")
 target_link_libraries(client PUBLIC client-static Threads::Threads m rt)
 endif() # SAMPLES
@@ -208,7 +196,7 @@ if(UNIT_TESTS)
     target_compile_features(${TESTNAME} PRIVATE cxx_nullptr)
     target_compile_definitions(${TESTNAME} PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_CLIENT" "OC_SERVER")
     target_include_directories(${TESTNAME} SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/../../deps/gtest/include")
-    target_include_directories(${TESTNAME} PRIVATE ${COMMON_INCLUDE_DIRS} "${CMAKE_SOURCE_DIR}/../../messaging/coap")
+    target_include_directories(${TESTNAME} PRIVATE ../../messaging/coap)
     if(SECURE)
       target_include_directories(${TESTNAME} PRIVATE "${CMAKE_SOURCE_DIR}/../../security")
     endif()
