@@ -276,6 +276,7 @@ if(UNIT_TESTS)
   package_add_test(apitest ${SRC_APITEST})
 
   file(GLOB SRC_PLATFORMTEST ../../port/unittest/*.cpp)
+  file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/storage_test)
   package_add_test(platformtest ${SRC_PLATFORMTEST})
 
   file(GLOB SRC_MESSAGINGTEST ../../messaging/coap/unittest/*.cpp)
