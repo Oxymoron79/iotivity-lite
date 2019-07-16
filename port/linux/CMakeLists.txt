@@ -18,9 +18,6 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 find_package(Threads REQUIRED)
 include(GNUInstallDirs)
 
-set(MBEDTLS_DIR "${CMAKE_SOURCE_DIR}/../../deps/mbedtls")
-set(GTEST_DIR "${CMAKE_SOURCE_DIR}/../../deps/gtest")
-
 # Gather source files
 file(GLOB SRC_COMMON
   ../../util/*.c
@@ -294,10 +291,6 @@ if(UNIT_TESTS)
     package_add_test(cloudtest ${SRC_CLOUDTEST})
   endif()
 endif()
-
-# Header files
-file(GLOB HEADERS ../../include/*.h)
-list(APPEND HEADERS oc_config.h)
 
 # Generate pkg-config files
 set(prefix ${CMAKE_INSTALL_PREFIX})
