@@ -157,88 +157,114 @@ target_link_libraries(client-server-shared PUBLIC Threads::Threads)
 set_target_properties(client-server-shared PROPERTIES OUTPUT_NAME iotivity-constrained-client-server)
 set_property(TARGET client-server-shared PROPERTY SOVERSION ${PROJECT_VERSION_MAJOR})
 
+# Install libraries
+install(TARGETS
+  client-static client-shared
+  server-static server-shared
+  client-server-static client-server-shared)
+
 # Sample applications
 if(SAMPLES)
 if(SECURE AND DYNAMIC)
 add_executable(onboarding_tool ../../onboarding_tool/obtmain.c)
 target_compile_definitions(onboarding_tool PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_CLIENT")
 target_link_libraries(onboarding_tool PUBLIC client-static Threads::Threads m rt)
+install(TARGETS onboarding_tool DESTINATION ${CMAKE_INSTALL_BINDIR}/iotivity-constrained)
 endif()
 
 add_executable(server ../../apps/server_linux.c)
 target_compile_definitions(server PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_SERVER")
 target_link_libraries(server PUBLIC server-static Threads::Threads m rt)
+install(TARGETS server DESTINATION ${CMAKE_INSTALL_BINDIR}/iotivity-constrained)
 
 add_executable(client ../../apps/client_linux.c)
 target_compile_definitions(client PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_CLIENT")
 target_link_libraries(client PUBLIC client-static Threads::Threads m rt)
+install(TARGETS client DESTINATION ${CMAKE_INSTALL_BINDIR}/iotivity-constrained)
+
 add_executable(smart_lock ../../apps/smart_lock_linux.c)
 target_compile_definitions(smart_lock PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_CLIENT")
 target_link_libraries(smart_lock PUBLIC client-static Threads::Threads m rt)
+install(TARGETS smart_lock DESTINATION ${CMAKE_INSTALL_BINDIR}/iotivity-constrained)
 
 add_executable(temp_sensor ../../apps/temp_sensor_client_linux.c)
 target_compile_definitions(temp_sensor PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_CLIENT")
 target_link_libraries(temp_sensor PUBLIC client-static Threads::Threads m rt)
+install(TARGETS temp_sensor DESTINATION ${CMAKE_INSTALL_BINDIR}/iotivity-constrained)
 
 add_executable(simpleserver ../../apps/simpleserver.c)
 target_compile_definitions(simpleserver PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_SERVER")
 target_link_libraries(simpleserver PUBLIC server-static Threads::Threads m rt)
+install(TARGETS simpleserver DESTINATION ${CMAKE_INSTALL_BINDIR}/iotivity-constrained)
 
 add_executable(simpleserver_pki ../../apps/simpleserver_pki.c)
 target_compile_definitions(simpleserver_pki PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_SERVER")
 target_link_libraries(simpleserver_pki PUBLIC server-static Threads::Threads m rt)
+install(TARGETS simpleserver_pki DESTINATION ${CMAKE_INSTALL_BINDIR}/iotivity-constrained)
 
 add_executable(simpleclient ../../apps/simpleclient.c)
 target_compile_definitions(simpleclient PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_CLIENT")
 target_link_libraries(simpleclient PUBLIC client-static Threads::Threads m rt)
+install(TARGETS simpleclient DESTINATION ${CMAKE_INSTALL_BINDIR}/iotivity-constrained)
 
 add_executable(client_collections_linux ../../apps/client_collections_linux.c)
 target_compile_definitions(client_collections_linux PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_CLIENT")
 target_link_libraries(client_collections_linux PUBLIC client-static Threads::Threads m rt)
+install(TARGETS client_collections_linux DESTINATION ${CMAKE_INSTALL_BINDIR}/iotivity-constrained)
 
 add_executable(server_collections_linux ../../apps/server_collections_linux.c)
 target_compile_definitions(server_collections_linux PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_SERVER")
 target_link_libraries(server_collections_linux PUBLIC server-static Threads::Threads m rt)
+install(TARGETS server_collections_linux DESTINATION ${CMAKE_INSTALL_BINDIR}/iotivity-constrained)
 
 add_executable(client_block_linux ../../apps/client_block_linux.c)
 target_compile_definitions(client_block_linux PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_CLIENT")
 target_link_libraries(client_block_linux PUBLIC client-static Threads::Threads m rt)
+install(TARGETS client_block_linux DESTINATION ${CMAKE_INSTALL_BINDIR}/iotivity-constrained)
 
 add_executable(server_block_linux ../../apps/server_block_linux.c)
 target_compile_definitions(server_block_linux PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_SERVER")
 target_link_libraries(server_block_linux PUBLIC server-static Threads::Threads m rt)
+install(TARGETS server_block_linux DESTINATION ${CMAKE_INSTALL_BINDIR}/iotivity-constrained)
 
 add_executable(smart_home_server_linux ../../apps/smart_home_server_linux.c)
 target_compile_definitions(smart_home_server_linux PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_SERVER")
 target_link_libraries(smart_home_server_linux PUBLIC server-static Threads::Threads m rt)
+install(TARGETS smart_home_server_linux DESTINATION ${CMAKE_INSTALL_BINDIR}/iotivity-constrained)
 
 add_executable(multi_device_server_linux ../../apps/multi_device_server_linux.c)
 target_compile_definitions(multi_device_server_linux PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_SERVER")
 target_link_libraries(multi_device_server_linux PUBLIC server-static Threads::Threads m rt)
+install(TARGETS multi_device_server_linux DESTINATION ${CMAKE_INSTALL_BINDIR}/iotivity-constrained)
 
 add_executable(multi_device_client_linux ../../apps/multi_device_client_linux.c)
 target_compile_definitions(multi_device_client_linux PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_CLIENT")
 target_link_libraries(multi_device_client_linux PUBLIC client-static Threads::Threads m rt)
+install(TARGETS multi_device_client_linux DESTINATION ${CMAKE_INSTALL_BINDIR}/iotivity-constrained)
 
 if(CLOUD)
 add_executable(cloud_linux ../../apps/cloud_linux.c)
 target_compile_definitions(cloud_linux PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_CLIENT" "OC_SERVER")
 target_include_directories(cloud_linux PRIVATE ${CLOUD_INCLUDE_DIRS})
 target_link_libraries(cloud_linux PUBLIC client-server-static Threads::Threads m rt)
+install(TARGETS cloud_linux DESTINATION ${CMAKE_INSTALL_BINDIR}/iotivity-constrained)
 
 add_executable(cloud_certification_tests ../../apps/cloud_certification_tests.c)
 target_compile_definitions(cloud_certification_tests PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_CLIENT" "OC_SERVER")
 target_include_directories(cloud_certification_tests PRIVATE ${CLOUD_INCLUDE_DIRS})
 target_link_libraries(cloud_certification_tests PUBLIC client-server-static Threads::Threads m rt)
+install(TARGETS cloud_certification_tests DESTINATION ${CMAKE_INSTALL_BINDIR}/iotivity-constrained)
 endif()
 
 add_executable(server_multithread_linux ../../apps/server_multithread_linux.c)
 target_compile_definitions(server_multithread_linux PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_SERVER")
 target_link_libraries(server_multithread_linux PUBLIC server-static Threads::Threads m rt)
+install(TARGETS server_multithread_linux DESTINATION ${CMAKE_INSTALL_BINDIR}/iotivity-constrained)
 
 add_executable(client_multithread_linux ../../apps/client_multithread_linux.c)
 target_compile_definitions(client_multithread_linux PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_CLIENT")
 target_link_libraries(client_multithread_linux PUBLIC client-static Threads::Threads m rt)
+install(TARGETS client_multithread_linux DESTINATION ${CMAKE_INSTALL_BINDIR}/iotivity-constrained)
 endif() # SAMPLES
 
 if(UNIT_TESTS)
@@ -293,6 +319,23 @@ if(UNIT_TESTS)
   endif()
 endif()
 
+# Install header files
+install(DIRECTORY ../../include/
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-constrained
+  FILES_MATCHING PATTERN "*.h")
+install(FILES oc_config.h
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-constrained/port)
+install(DIRECTORY ../../util
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-constrained
+  FILES_MATCHING PATTERN "*.h")
+install(DIRECTORY ../../messaging/coap/
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-constrained/messaging/coap
+  FILES_MATCHING PATTERN "*.h"
+  PATTERN "unittest" EXCLUDE)
+install(DIRECTORY ../../deps/tinycbor/src/
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-constrained/deps/tinycbor/src
+  FILES_MATCHING PATTERN "*.h")
+
 # Generate pkg-config files
 set(prefix ${CMAKE_INSTALL_PREFIX})
 set(exec_prefix "\${prefix}")
@@ -306,15 +349,12 @@ endforeach()
 set(PKG_CONFIG_FILES
   iotivity-constrained-client.pc
   iotivity-constrained-server.pc
-  iotivity-constrained-client-server.pc
-)
+  iotivity-constrained-client-server.pc)
 foreach(pkg-config-file IN LISTS PKG_CONFIG_FILES)
 configure_file(
   "${pkg-config-file}.in"
   ${pkg-config-file}
-  @ONLY
-)
+  @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${pkg-config-file}
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 endforeach()
-install(FILES ${PKG_CONFIG_FILES}
-  DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
-)
