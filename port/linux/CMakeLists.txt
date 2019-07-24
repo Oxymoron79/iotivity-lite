@@ -18,6 +18,61 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 find_package(Threads REQUIRED)
 include(GNUInstallDirs)
 
+if(SECURE)
+  find_package(Git REQUIRED)
+  find_package(Patch REQUIRED)
+  set(MBEDTLS_DIR ${PROJECT_SOURCE_DIR}/../../deps/mbedtls)
+  set(MBEDTLS_PATCH_FILE ${MBEDTLS_DIR}/patched.txt)
+  if(EXISTS ${PROJECT_SOURCE_DIR}/../../.git)
+    if(NOT EXISTS ${MBEDTLS_DIR}/.git)
+      message(STATUS "Initialize deps/mbedtls submodule")
+      execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init deps/mbedtls
+                      WORKING_DIRECTORY  ${PROJECT_SOURCE_DIR}/../..
+                      RESULT_VARIABLE GIT_SUBMOD_INIT)
+      if(NOT GIT_SUBMOD_INIT EQUAL "0")
+        message(FATAL_ERROR "git submodule update --init deps/mbedtls failed with: ${GIT_SUBMOD_INIT}")
+      endif()
+    endif()
+    if(NOT EXISTS ${MBEDTLS_PATCH_FILE})
+      message(STATUS "Clean deps/mbedtls submodule")
+      execute_process(COMMAND ${GIT_EXECUTABLE} clean -fdx .
+                      WORKING_DIRECTORY  ${MBEDTLS_DIR}
+                      RESULT_VARIABLE GIT_SUBMOD_CLEAN)
+      if(NOT GIT_SUBMOD_CLEAN EQUAL "0")
+        message(FATAL_ERROR "git clean -fdx failed with: ${GIT_SUBMOD_CLEAN}")
+      endif()
+      message(STATUS "Hard reset deps/mbedtls submodule")
+      execute_process(COMMAND ${GIT_EXECUTABLE} reset --hard
+                      WORKING_DIRECTORY  ${MBEDTLS_DIR}
+                      RESULT_VARIABLE GIT_SUBMOD_RESET)
+      if(NOT GIT_SUBMOD_RESET EQUAL "0")
+        message(FATAL_ERROR "git reset --hard failed with: ${GIT_SUBMOD_RESET}")
+       endif()
+      message(STATUS "Initialize deps/mbedtls submodule")
+      execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init deps/mbedtls
+                      WORKING_DIRECTORY  ${PROJECT_SOURCE_DIR}/../..
+                      RESULT_VARIABLE GIT_SUBMOD_INIT)
+      if(NOT GIT_SUBMOD_INIT EQUAL "0")
+        message(FATAL_ERROR "git submodule update --init deps/mbedtls failed with: ${GIT_SUBMOD_INIT}")
+      endif()
+      message(STATUS "Patch deps/mbedtls submodule")
+      file(GLOB MBEDTLS_PATCHES ${PROJECT_SOURCE_DIR}/../../patches/*.patch)
+      file(APPEND ${MBEDTLS_PATCH_FILE} "Applied patches:\n")
+      foreach(patch IN LISTS MBEDTLS_PATCHES)
+        message(STATUS "Apply ${Patch_EXECUTABLE} ${patch}")
+        execute_process(COMMAND ${Patch_EXECUTABLE} -r - -s -N -p1
+                        INPUT_FILE ${patch}
+                        WORKING_DIRECTORY  ${MBEDTLS_DIR}
+                        RESULT_VARIABLE GIT_SUBMOD_PATCH)
+        if(NOT GIT_SUBMOD_PATCH EQUAL "0")
+          message(FATAL_ERROR "patch -r - -s -N -p1 < ${patch} failed with: ${GIT_SUBMOD_PATCH}")
+        endif()
+        file(APPEND ${MBEDTLS_PATCH_FILE} "${patch}\n")
+      endforeach()
+    endif()
+  endif()
+endif()
+
 # Gather source files
 file(GLOB SRC_COMMON
   ../../util/*.c
