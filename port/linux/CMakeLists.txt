@@ -181,7 +181,8 @@ if(CLOUD)
   target_compile_definitions(cloud-obj PRIVATE ${PRIVATE_COMPILER_DEFS} ${PUBLIC_COMPILER_DEFS} "OC_CLOUD")
 endif()
 
-# Libraries
+# Static and shared libraries
+# Client
 add_library(client-static STATIC $<TARGET_OBJECTS:common-obj> $<TARGET_OBJECTS:client-obj>)
 set_target_properties(client-static PROPERTIES OUTPUT_NAME iotivity-constrained-client)
 
@@ -190,7 +191,7 @@ target_link_libraries(client-shared PUBLIC Threads::Threads)
 set_target_properties(client-shared PROPERTIES OUTPUT_NAME iotivity-constrained-client)
 set_property(TARGET client-shared PROPERTY SOVERSION ${PROJECT_VERSION_MAJOR})
 
-
+# Server
 add_library(server-static STATIC $<TARGET_OBJECTS:common-obj> $<TARGET_OBJECTS:server-obj>)
 set_target_properties(server-static PROPERTIES OUTPUT_NAME iotivity-constrained-server)
 
@@ -199,7 +200,7 @@ target_link_libraries(server-shared PUBLIC Threads::Threads)
 set_target_properties(server-shared PROPERTIES OUTPUT_NAME iotivity-constrained-server)
 set_property(TARGET server-shared PROPERTY SOVERSION ${PROJECT_VERSION_MAJOR})
 
-
+# Client-Server
 set(client-server-lib-obj $<TARGET_OBJECTS:common-obj> $<TARGET_OBJECTS:client-server-obj>)
 if(CLOUD)
   list(APPEND client-server-lib-obj $<TARGET_OBJECTS:cloud-obj>)
