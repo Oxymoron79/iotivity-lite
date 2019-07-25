@@ -218,6 +218,46 @@ install(TARGETS
   server-static server-shared
   client-server-static client-server-shared)
 
+# Install header files
+install(DIRECTORY ../../include/
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-constrained
+  FILES_MATCHING PATTERN "*.h")
+install(FILES oc_config.h
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-constrained/port)
+install(DIRECTORY ../../util
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-constrained
+  FILES_MATCHING PATTERN "*.h")
+install(DIRECTORY ../../messaging/coap/
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-constrained/messaging/coap
+  FILES_MATCHING PATTERN "*.h"
+  PATTERN "unittest" EXCLUDE)
+install(DIRECTORY ../../deps/tinycbor/src/
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-constrained/deps/tinycbor/src
+  FILES_MATCHING PATTERN "*.h")
+
+# Generate pkg-config files
+set(prefix ${CMAKE_INSTALL_PREFIX})
+set(exec_prefix "\${prefix}")
+set(libdir "\${prefix}/${CMAKE_INSTALL_LIBDIR}")
+set(includedir "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
+set(version ${PROJECT_VERSION})
+foreach(cflag IN LISTS PUBLIC_COMPILER_DEFS)
+  string(APPEND extra_cflags "-D${cflag} ")
+endforeach()
+
+set(PKG_CONFIG_FILES
+  iotivity-constrained-client.pc
+  iotivity-constrained-server.pc
+  iotivity-constrained-client-server.pc)
+foreach(pkg-config-file IN LISTS PKG_CONFIG_FILES)
+configure_file(
+  "${pkg-config-file}.in"
+  ${pkg-config-file}
+  @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${pkg-config-file}
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+endforeach()
+
 # Sample applications
 if(SAMPLES)
 if(SECURE AND DYNAMIC)
@@ -373,43 +413,3 @@ if(UNIT_TESTS)
     package_add_test(cloudtest ${SRC_CLOUDTEST})
   endif()
 endif()
-
-# Install header files
-install(DIRECTORY ../../include/
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-constrained
-  FILES_MATCHING PATTERN "*.h")
-install(FILES oc_config.h
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-constrained/port)
-install(DIRECTORY ../../util
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-constrained
-  FILES_MATCHING PATTERN "*.h")
-install(DIRECTORY ../../messaging/coap/
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-constrained/messaging/coap
-  FILES_MATCHING PATTERN "*.h"
-  PATTERN "unittest" EXCLUDE)
-install(DIRECTORY ../../deps/tinycbor/src/
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-constrained/deps/tinycbor/src
-  FILES_MATCHING PATTERN "*.h")
-
-# Generate pkg-config files
-set(prefix ${CMAKE_INSTALL_PREFIX})
-set(exec_prefix "\${prefix}")
-set(libdir "\${prefix}/${CMAKE_INSTALL_LIBDIR}")
-set(includedir "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
-set(version ${PROJECT_VERSION})
-foreach(cflag IN LISTS PUBLIC_COMPILER_DEFS)
-  string(APPEND extra_cflags "-D${cflag} ")
-endforeach()
-
-set(PKG_CONFIG_FILES
-  iotivity-constrained-client.pc
-  iotivity-constrained-server.pc
-  iotivity-constrained-client-server.pc)
-foreach(pkg-config-file IN LISTS PKG_CONFIG_FILES)
-configure_file(
-  "${pkg-config-file}.in"
-  ${pkg-config-file}
-  @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${pkg-config-file}
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-endforeach()
