@@ -84,6 +84,11 @@ file(GLOB SRC_COMMON
   ../../deps/tinycbor/src/cborencoder_close_container_checked.c
   ../../deps/tinycbor/src/cborparser.c
 )
+if(PKI)
+  list(APPEND SRC_COMMON
+     ../../api/c-timestamp/timestamp_tm.c
+  )
+endif()
 
 file(GLOB SRC_SERVER
   ../../messaging/coap/*.c
@@ -101,7 +106,6 @@ if(SECURE)
   list(REMOVE_ITEM SRC_DTLS
     ../../deps/mbedtls/library/certs.c
     ../../deps/mbedtls/library/x509_crl.c
-    ../../deps/mbedtls/library/x509_csr.c
   )
   list(APPEND SRC_COMMON ${SRC_DTLS})
 
