@@ -224,7 +224,11 @@ install(TARGETS
 install(DIRECTORY ../../include/
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-constrained
   FILES_MATCHING PATTERN "*.h")
-install(FILES oc_config.h
+file(GLOB HEADERS_PORT
+  oc_config.h
+  ../../port/*.h
+)
+install(FILES ${HEADERS_PORT}
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-constrained/port)
 install(DIRECTORY ../../util
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-constrained
