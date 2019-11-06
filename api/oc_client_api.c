@@ -436,7 +436,7 @@ multi_scope_ipv6_multicast(oc_client_cb_t *cb4, uint8_t scope, const char *uri,
                            void *user_data)
 {
   if (!uri || !handler) {
-    return NULL;
+    return false;
   }
 
   oc_make_ipv6_endpoint(mcast, IPV6 | DISCOVERY, 5683, 0xff, scope, 0, 0, 0, 0,
@@ -508,7 +508,7 @@ dispatch_ip_discovery(oc_client_cb_t *cb4, const char *query,
 {
   if (!endpoint) {
     OC_ERR("require valid endpoint");
-    return NULL;
+    return false;
   }
 
   oc_client_handler_t client_handler;
@@ -702,7 +702,8 @@ oc_assert_role(const char *role, const char *authority, oc_endpoint_t *endpoint,
 }
 
 void
-oc_assert_all_roles(oc_endpoint_t *endpoint, oc_response_handler_t handler)
+oc_assert_all_roles(oc_endpoint_t *endpoint, oc_response_handler_t handler,
+                    void *user_data)
 {
   oc_tls_peer_t *peer = oc_tls_get_peer(endpoint);
   if (oc_tls_uses_psk_cred(peer)) {
@@ -712,7 +713,7 @@ oc_assert_all_roles(oc_endpoint_t *endpoint, oc_response_handler_t handler)
   oc_role_t *roles = oc_get_all_roles();
   if (roles) {
     if (oc_init_post("/oic/sec/roles", endpoint, NULL, handler, HIGH_QOS,
-                     peer)) {
+                     user_data)) {
       oc_rep_start_root_object();
       oc_rep_set_array(root, roles);
 
