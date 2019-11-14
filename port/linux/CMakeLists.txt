@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.2)
 
 project(iotivity-lite VERSION 2.0.5 LANGUAGES C)
 
+option(CREATE "Build with support for the create interface in collections." OFF)
 option(DYNAMIC "Build with dynamic resource creation." ON)
 option(SECURE "Build with security layer." ON)
 option(PKI "Build with private key infrastructure." ON)
@@ -136,6 +137,9 @@ set(PRIVATE_COMPILER_DEFS "")
 set(PUBLIC_COMPILER_DEFS "")
 
 string(APPEND CMAKE_C_FLAGS_DEBUG " -O0 -DOC_DEBUG")
+if(CREATE)
+  list(APPEND PUBLIC_COMPILER_DEFS "OC_COLLECTIONS_IF_CREATE")
+endif()
 if(SECURE)
   list(APPEND PRIVATE_COMPILER_DEFS "__OC_RANDOM")
   list(APPEND PUBLIC_COMPILER_DEFS "OC_SECURITY")
