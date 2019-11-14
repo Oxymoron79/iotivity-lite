@@ -9,6 +9,7 @@ option(PKI "Build with private key infrastructure." ON)
 option(CLOUD "Build with cloud support." OFF)
 option(IPV4 "Build with IPv4 support." OFF)
 option(TCP "Build with TCP support." OFF)
+option(MNT "Build with mainenance resource." OFF)
 option(SAMPLES "Build sample applications." ON)
 option(UNIT_TESTS "Build the unittests" ON)
 
@@ -160,6 +161,9 @@ if(IPV4)
 endif()
 if(TCP)
   list(APPEND PUBLIC_COMPILER_DEFS "OC_TCP")
+endif()
+if(MNT)
+  list(APPEND PUBLIC_COMPILER_DEFS "OC_MNT")
 endif()
 
 # Include directories
