@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.2)
 
-project(iotivity-constrained VERSION 1.0.0 LANGUAGES C)
+project(iotivity-lite VERSION 2.0.5 LANGUAGES C)
 
 option(DYNAMIC "Build with dynamic resource creation." ON)
 option(SECURE "Build with security layer." ON)
@@ -189,20 +189,20 @@ endif()
 # Static and shared libraries
 # Client
 add_library(client-static STATIC $<TARGET_OBJECTS:common-obj> $<TARGET_OBJECTS:client-obj>)
-set_target_properties(client-static PROPERTIES OUTPUT_NAME iotivity-constrained-client)
+set_target_properties(client-static PROPERTIES OUTPUT_NAME iotivity-lite-client)
 
 add_library(client-shared SHARED $<TARGET_OBJECTS:common-obj> $<TARGET_OBJECTS:client-obj>)
 target_link_libraries(client-shared PUBLIC Threads::Threads)
-set_target_properties(client-shared PROPERTIES OUTPUT_NAME iotivity-constrained-client)
+set_target_properties(client-shared PROPERTIES OUTPUT_NAME iotivity-lite-client)
 set_property(TARGET client-shared PROPERTY SOVERSION ${PROJECT_VERSION_MAJOR})
 
 # Server
 add_library(server-static STATIC $<TARGET_OBJECTS:common-obj> $<TARGET_OBJECTS:server-obj>)
-set_target_properties(server-static PROPERTIES OUTPUT_NAME iotivity-constrained-server)
+set_target_properties(server-static PROPERTIES OUTPUT_NAME iotivity-lite-server)
 
 add_library(server-shared SHARED $<TARGET_OBJECTS:common-obj> $<TARGET_OBJECTS:server-obj>)
 target_link_libraries(server-shared PUBLIC Threads::Threads)
-set_target_properties(server-shared PROPERTIES OUTPUT_NAME iotivity-constrained-server)
+set_target_properties(server-shared PROPERTIES OUTPUT_NAME iotivity-lite-server)
 set_property(TARGET server-shared PROPERTY SOVERSION ${PROJECT_VERSION_MAJOR})
 
 # Client-Server
@@ -211,11 +211,11 @@ if(CLOUD)
   list(APPEND client-server-lib-obj $<TARGET_OBJECTS:cloud-obj>)
 endif()
 add_library(client-server-static STATIC ${client-server-lib-obj})
-set_target_properties(client-server-static PROPERTIES OUTPUT_NAME iotivity-constrained-client-server)
+set_target_properties(client-server-static PROPERTIES OUTPUT_NAME iotivity-lite-client-server)
 
 add_library(client-server-shared SHARED ${client-server-lib-obj})
 target_link_libraries(client-server-shared PUBLIC Threads::Threads)
-set_target_properties(client-server-shared PROPERTIES OUTPUT_NAME iotivity-constrained-client-server)
+set_target_properties(client-server-shared PROPERTIES OUTPUT_NAME iotivity-lite-client-server)
 set_property(TARGET client-server-shared PROPERTY SOVERSION ${PROJECT_VERSION_MAJOR})
 
 # Install libraries
@@ -226,24 +226,24 @@ install(TARGETS
 
 # Install header files
 install(DIRECTORY ../../include/
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-constrained
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-lite
   FILES_MATCHING PATTERN "*.h")
 install(FILES oc_config.h
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-constrained)
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-lite)
 file(GLOB HEADERS_PORT
   ../../port/*.h
 )
 install(FILES ${HEADERS_PORT}
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-constrained/port)
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-lite/port)
 install(DIRECTORY ../../util
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-constrained
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-lite
   FILES_MATCHING PATTERN "*.h")
 install(DIRECTORY ../../messaging/coap/
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-constrained/messaging/coap
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-lite/messaging/coap
   FILES_MATCHING PATTERN "*.h"
   PATTERN "unittest" EXCLUDE)
 install(DIRECTORY ../../deps/tinycbor/src/
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-constrained/deps/tinycbor/src
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iotivity-lite/deps/tinycbor/src
   FILES_MATCHING PATTERN "*.h")
 
 # Generate pkg-config files
@@ -257,9 +257,9 @@ foreach(cflag IN LISTS PUBLIC_COMPILER_DEFS)
 endforeach()
 
 set(PKG_CONFIG_FILES
-  iotivity-constrained-client.pc
-  iotivity-constrained-server.pc
-  iotivity-constrained-client-server.pc)
+  iotivity-lite-client.pc
+  iotivity-lite-server.pc
+  iotivity-lite-client-server.pc)
 foreach(pkg-config-file IN LISTS PKG_CONFIG_FILES)
 configure_file(
   "${pkg-config-file}.in"
