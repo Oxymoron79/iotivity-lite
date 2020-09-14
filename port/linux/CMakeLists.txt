@@ -9,7 +9,7 @@ option(PKI "Build with private key infrastructure." ON)
 option(CLOUD "Build with cloud support." OFF)
 option(IPV4 "Build with IPv4 support." OFF)
 option(TCP "Build with TCP support." OFF)
-option(MNT "Build with mainenance resource." OFF)
+option(MNT "Build with maintenance resource." OFF)
 option(SAMPLES "Build sample applications." ON)
 option(UNIT_TESTS "Build the unittests" ON)
 
