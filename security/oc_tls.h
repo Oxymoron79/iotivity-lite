@@ -55,7 +55,7 @@ typedef struct oc_tls_peer_t
   oc_uuid_t uuid;
   oc_clock_time_t timestamp;
 #ifdef OC_PKI
-  uint8_t public_key[OC_KEYPAIR_PUBKEY_SIZE];
+  oc_string_t public_key;
 #endif /* OC_PKI */
 } oc_tls_peer_t;
 
@@ -63,7 +63,7 @@ int oc_tls_init_context(void);
 void oc_tls_shutdown(void);
 
 void oc_tls_close_connection(oc_endpoint_t *endpoint);
-void oc_tls_close_all_connections(size_t device);
+
 bool oc_sec_derive_owner_psk(oc_endpoint_t *endpoint, const uint8_t *oxm,
                              const size_t oxm_len, const uint8_t *server_uuid,
                              const size_t server_uuid_len,
@@ -91,6 +91,11 @@ bool oc_tls_is_cert_otm_supported(size_t device);
 
 /* Internal interface for generating a random PIN */
 void oc_tls_generate_random_pin(void);
+
+/* Internal interface for changing psk authority hint */
+#ifdef OC_CLIENT
+void oc_tls_use_pin_obt_psk_identity(void);
+#endif /* OC_CLIENT */
 
 /* Internal interface for deriving a PSK for the Random PIN OTM */
 int oc_tls_pbkdf2(const unsigned char *pin, size_t pin_len, oc_uuid_t *uuid,

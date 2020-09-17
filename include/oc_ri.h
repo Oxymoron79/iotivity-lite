@@ -23,11 +23,11 @@
 #include "oc_endpoint.h"
 #include "oc_rep.h"
 #include "oc_uuid.h"
+#include "oc_enums.h"
 #include "util/oc_etimer.h"
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 typedef enum { OC_GET = 1, OC_POST, OC_PUT, OC_DELETE } oc_method_t;
@@ -65,11 +65,39 @@ typedef enum {
   OC_PING_TIMEOUT
 } oc_status_t;
 
+/* OCF payload Content-Formats */
+typedef enum {
+  TEXT_PLAIN = 0,
+  TEXT_XML = 1,
+  TEXT_CSV = 2,
+  TEXT_HTML = 3,
+  IMAGE_GIF = 21,
+  IMAGE_JPEG = 22,
+  IMAGE_PNG = 23,
+  IMAGE_TIFF = 24,
+  AUDIO_RAW = 25,
+  VIDEO_RAW = 26,
+  APPLICATION_LINK_FORMAT = 40,
+  APPLICATION_XML = 41,
+  APPLICATION_OCTET_STREAM = 42,
+  APPLICATION_RDF_XML = 43,
+  APPLICATION_SOAP_XML = 44,
+  APPLICATION_ATOM_XML = 45,
+  APPLICATION_XMPP_XML = 46,
+  APPLICATION_EXI = 47,
+  APPLICATION_FASTINFOSET = 48,
+  APPLICATION_SOAP_FASTINFOSET = 49,
+  APPLICATION_JSON = 50,
+  APPLICATION_X_OBIX_BINARY = 51,
+  APPLICATION_CBOR = 60,
+  APPLICATION_VND_OCF_CBOR = 10000
+} oc_content_format_t;
+
 typedef struct oc_separate_response_s oc_separate_response_t;
 
 typedef struct oc_response_buffer_s oc_response_buffer_t;
 
-typedef struct
+typedef struct oc_response_t
 {
   oc_separate_response_t *separate_response;
   oc_response_buffer_t *response_buffer;
@@ -107,9 +135,11 @@ typedef enum {
   OCF_SEC_DOXM,
   OCF_SEC_PSTAT,
   OCF_SEC_ACL,
+  OCF_SEC_AEL,
   OCF_SEC_CRED,
-#ifdef OC_PKI
+  OCF_SEC_SDI,
   OCF_SEC_SP,
+#ifdef OC_PKI
   OCF_SEC_CSR,
   OCF_SEC_ROLES,
 #endif /* OC_PKI */
@@ -123,13 +153,16 @@ typedef enum {
 
 typedef struct oc_resource_s oc_resource_t;
 
-typedef struct
+typedef struct oc_request_t
 {
   oc_endpoint_t *origin;
   oc_resource_t *resource;
   const char *query;
   size_t query_len;
   oc_rep_t *request_payload;
+  const uint8_t *_payload;
+  size_t _payload_len;
+  oc_content_format_t content_format;
   oc_response_t *response;
 } oc_request_t;
 
@@ -148,8 +181,7 @@ typedef void (*oc_get_properties_cb_t)(oc_resource_t *, oc_interface_mask_t,
 
 typedef struct oc_properties_cb_t
 {
-  union
-  {
+  union {
     oc_set_properties_cb_t set_props;
     oc_get_properties_cb_t get_props;
   } cb;
@@ -170,13 +202,16 @@ struct oc_resource_s
   oc_request_handler_t put_handler;
   oc_request_handler_t post_handler;
   oc_request_handler_t delete_handler;
+  oc_properties_cb_t get_properties;
+  oc_properties_cb_t set_properties;
+  double tag_pos_rel[3];
+  oc_pos_description_t tag_pos_desc;
+  oc_enum_t tag_func_desc;
   uint8_t num_observers;
 #ifdef OC_COLLECTIONS
   uint8_t num_links;
 #endif /* OC_COLLECTIONS */
   uint16_t observe_period_seconds;
-  oc_properties_cb_t get_properties;
-  oc_properties_cb_t set_properties;
 };
 
 typedef struct oc_link_s oc_link_t;
@@ -238,6 +273,8 @@ int oc_ri_get_query_value(const char *query, size_t query_len, const char *key,
                           char **value);
 
 oc_interface_mask_t oc_ri_get_interface_mask(char *iface, size_t if_len);
+
+bool oc_ri_is_app_resource_valid(oc_resource_t *resource);
 
 #ifdef __cplusplus
 }

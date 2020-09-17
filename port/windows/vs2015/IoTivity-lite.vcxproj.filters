@@ -382,6 +382,27 @@
     <ClCompile Include="..\..\..\api\c-timestamp\timestamp_valid.c">
       <Filter>Core\c-timestamp</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\api\cloud\oc_cloud.c">
+      <Filter>Core\cloud</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\api\cloud\oc_cloud_apis.c">
+      <Filter>Core\cloud</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\api\cloud\oc_cloud_manager.c">
+      <Filter>Core\cloud</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\api\cloud\oc_cloud_rd.c">
+      <Filter>Core\cloud</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\api\cloud\oc_cloud_resource.c">
+      <Filter>Core\cloud</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\api\cloud\oc_cloud_store.c">
+      <Filter>Core\cloud</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\api\cloud\rd_client.c">
+      <Filter>Core\cloud</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\security\oc_obt_certs.c">
       <Filter>Security</Filter>
     </ClCompile>
@@ -390,6 +411,60 @@
     </ClCompile>
     <ClCompile Include="..\..\..\api\oc_mnt.c">
       <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tcpadapter.c">
+      <Filter>Port</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\messaging\coap\coap_signal.c">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\network_addresses.c">
+      <Filter>Port</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\api\cloud\oc_cloud.c">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\api\cloud\oc_cloud_apis.c">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\api\cloud\oc_cloud_manager.c">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\api\cloud\oc_cloud_rd.c">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\api\cloud\oc_cloud_resource.c">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\api\cloud\oc_cloud_store.c">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\api\cloud\rd_client.c">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mutex.c">
+      <Filter>Port</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\mbedtls\library\platform_util.c">
+      <Filter>mbedTLS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\api\oc_enums.c">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\api\oc_resource_factory.c">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\api\oc_swupdate.c">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\security\oc_ael.c">
+      <Filter>Security</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\security\oc_audit.c">
+      <Filter>Security</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\security\oc_sdi.c">
+      <Filter>Security</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -600,6 +675,18 @@
     <ClInclude Include="..\..\..\api\oc_introspection_internal.h">
       <Filter>Core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\include\oc_cloud.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\api\cloud\oc_cloud_internal.h">
+      <Filter>Core\cloud</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\api\cloud\rd_client.h">
+      <Filter>Core\cloud</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\api\oc_session_events_internal.h">
+      <Filter>Core</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\..\security\oc_obt_internal.h">
       <Filter>Security</Filter>
     </ClInclude>
@@ -620,6 +707,45 @@
     </ClInclude>
     <ClInclude Include="..\..\..\include\oc_swupdate.h">
       <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ipcontext.h">
+      <Filter>Port</Filter>
+    </ClInclude>
+    <ClInclude Include="..\tcpadapter.h">
+      <Filter>Port</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\messaging\coap\coap_signal.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\network_addresses.h">
+      <Filter>Port</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\api\cloud\oc_cloud_internal.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\api\cloud\rd_client.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mutex.h">
+      <Filter>Port</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\api\oc_resource_factory.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\api\oc_swupdate_internal.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\oc_enums.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\security\oc_ael.h">
+      <Filter>Security</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\security\oc_audit.h">
+      <Filter>Security</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\security\oc_sdi.h">
+      <Filter>Security</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -644,5 +770,16 @@
     <Filter Include="Core\c-timestamp">
       <UniqueIdentifier>{d83c9727-1931-4e51-9774-da03809c6325}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Core\cloud">
+      <UniqueIdentifier>{37aa79ab-54ab-451b-bdd5-43626b0b51df}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\security\oc_pstat.c.diff">
+      <Filter>Core</Filter>
+    </None>
+    <None Include="..\..\..\security\oc_tls.c.diff">
+      <Filter>Core</Filter>
+    </None>
   </ItemGroup>
 </Project>

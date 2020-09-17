@@ -20,11 +20,13 @@
 #include "api/oc_main.h"
 #include "messaging/coap/observe.h"
 #include "oc_acl_internal.h"
+#include "oc_ael.h"
 #include "oc_api.h"
 #include "oc_core_res.h"
 #include "oc_cred_internal.h"
 #include "oc_doxm.h"
 #include "oc_roles.h"
+#include "oc_sdi.h"
 #include "oc_sp.h"
 #include "oc_store.h"
 #include "oc_tls.h"
@@ -40,7 +42,7 @@
 #include "port/oc_assert.h"
 #include <stdlib.h>
 static oc_sec_pstat_t *pstat;
-#else /* OC_DYNAMIC_ALLOCATION */
+#else  /* OC_DYNAMIC_ALLOCATION */
 static oc_sec_pstat_t pstat[OC_MAX_NUM_DEVICES];
 #endif /* !OC_DYNAMIC_ALLOCATION */
 
@@ -146,18 +148,6 @@ oc_pstat_handle_state(oc_sec_pstat_t *ps, size_t device, bool from_storage,
     ps->tm = 2;
     ps->om = 3;
     ps->sm = 4;
-    memset(ps->rowneruuid.id, 0, 16);
-    oc_sec_doxm_default(device);
-    oc_sec_cred_default(device);
-    oc_sec_acl_default(device);
-    if (!from_storage) {
-      oc_device_info_t *di = oc_core_get_device_info(device);
-      oc_free_string(&di->name);
-    }
-#ifdef OC_PKI
-    oc_sec_free_roles_for_device(device);
-    oc_sec_sp_default(device);
-#endif /* OC_PKI */
 #ifdef OC_SERVER
 #ifdef OC_CLIENT
 #ifdef OC_CLOUD
@@ -165,6 +155,20 @@ oc_pstat_handle_state(oc_sec_pstat_t *ps, size_t device, bool from_storage,
 #endif /* OC_CLOUD */
 #endif /* OC_CLIENT */
 #endif /* OC_SERVER */
+    memset(ps->rowneruuid.id, 0, 16);
+    oc_sec_doxm_default(device);
+    oc_sec_cred_default(device);
+    oc_sec_acl_default(device);
+    oc_sec_ael_default(device);
+    oc_sec_sdi_default(device);
+    if (!from_storage && oc_get_con_res_announced()) {
+      oc_device_info_t *di = oc_core_get_device_info(device);
+      oc_free_string(&di->name);
+    }
+#ifdef OC_PKI
+    oc_sec_free_roles_for_device(device);
+#endif /* OC_PKI */
+    oc_sec_sp_default(device);
 #ifdef OC_SERVER
 #if defined(OC_COLLECTIONS) && defined(OC_COLLECTIONS_IF_CREATE)
     oc_rt_factory_free_created_resources(device);
@@ -192,7 +196,7 @@ oc_pstat_handle_state(oc_sec_pstat_t *ps, size_t device, bool from_storage,
     oc_factory_presets_t *fp = oc_get_factory_presets_cb();
     if (fp->cb != NULL) {
       if (self_reset) {
-        oc_tls_close_all_connections(device);
+        oc_close_all_tls_sessions_for_device(device);
       }
       memcpy(&pstat[device], ps, sizeof(oc_sec_pstat_t));
       OC_DBG("oc_pstat: invoking the factory presets callback");
@@ -258,9 +262,6 @@ oc_pstat_handle_state(oc_sec_pstat_t *ps, size_t device, bool from_storage,
     ps->p = false;
   } break;
   case OC_DOS_RFNOP: {
-#ifdef OC_SERVER
-    coap_remove_observers_on_dos_change(device, false);
-#endif /* OC_SERVER */
     ps->p = true;
     ps->cm = 0;
     ps->tm = 0;
@@ -373,6 +374,11 @@ oc_pstat_handle_state(oc_sec_pstat_t *ps, size_t device, bool from_storage,
     break;
   }
   memmove(&pstat[device], ps, sizeof(oc_sec_pstat_t));
+#ifdef OC_SERVER
+  if (ps->s == OC_DOS_RFNOP) {
+    coap_remove_observers_on_dos_change(device, false);
+  }
+#endif /* OC_SERVER */
   OC_DBG("oc_pstat: leaving pstat_handle_state");
   return true;
 pstat_state_error:
@@ -398,21 +404,24 @@ oc_sec_is_operational(size_t device)
 void
 oc_sec_pstat_default(size_t device)
 {
-  oc_sec_pstat_t ps = {.s = OC_DOS_RESET };
+  oc_sec_pstat_t ps = { .s = OC_DOS_RESET };
   oc_pstat_handle_state(&ps, device, true, false);
   oc_sec_dump_pstat(device);
 }
 
 void
-oc_sec_encode_pstat(size_t device)
+oc_sec_encode_pstat(size_t device, oc_interface_mask_t iface_mask,
+                    bool to_storage)
 {
 #ifdef OC_DEBUG
   dump_pstat_dos(&pstat[device]);
 #endif /* OC_DEBUG */
   char uuid[OC_UUID_LEN];
   oc_rep_start_root_object();
-  oc_process_baseline_interface(
-    oc_core_get_resource_by_index(OCF_SEC_PSTAT, device));
+  if (to_storage || iface_mask & OC_IF_BASELINE) {
+    oc_process_baseline_interface(
+      oc_core_get_resource_by_index(OCF_SEC_PSTAT, device));
+  }
   oc_rep_set_object(root, dos);
   oc_rep_set_boolean(dos, p, pstat[device].p);
   oc_rep_set_int(dos, s, pstat[device].s);
@@ -561,8 +570,9 @@ get_pstat(oc_request_t *request, oc_interface_mask_t iface_mask, void *data)
 {
   (void)data;
   switch (iface_mask) {
+  case OC_IF_RW:
   case OC_IF_BASELINE: {
-    oc_sec_encode_pstat(request->resource->device);
+    oc_sec_encode_pstat(request->resource->device, iface_mask, false);
     oc_send_response(request, OC_STATUS_OK);
   } break;
   default:
@@ -589,10 +599,16 @@ post_pstat(oc_request_t *request, oc_interface_mask_t iface_mask, void *data)
 bool
 oc_pstat_reset_device(size_t device, bool self_reset)
 {
-  oc_sec_pstat_t ps = {.s = OC_DOS_RESET };
+  oc_sec_pstat_t ps = { .s = OC_DOS_RESET };
   bool ret = oc_pstat_handle_state(&ps, device, false, self_reset);
   oc_sec_dump_pstat(device);
   return ret;
+}
+
+void
+oc_reset_device(size_t device)
+{
+  oc_pstat_reset_device(device, true);
 }
 
 void

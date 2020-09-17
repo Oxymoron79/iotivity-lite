@@ -94,7 +94,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;OC_CLIENT;OC_SERVER;OC_IPV4;OC_SECURITY;OC_PKI;OC_DYNAMIC_ALLOCATION;OC_IDD_FILE;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;__OC_RANDOM;OC_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;OC_CLIENT;OC_SERVER;OC_IPV4;OC_TCP;OC_CLOUD;OC_SECURITY;OC_PKI;OC_DYNAMIC_ALLOCATION;OC_IDD_API;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;__OC_RANDOM;OC_DEBUG;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -128,7 +128,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;OC_CLIENT;OC_SERVER;OC_IPV4;OC_SECURITY;OC_PKI;OC_DYNAMIC_ALLOCATION;OC_IDD_FILE;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;__OC_RANDOM;OC_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;OC_CLIENT;OC_SERVER;OC_IPV4;OC_TCP;OC_CLOUD;OC_SECURITY;OC_PKI;OC_DYNAMIC_ALLOCATION;OC_IDD_API;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;__OC_RANDOM;OC_DEBUG;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
@@ -159,7 +159,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>WIN32;OC_CLIENT;OC_SERVER;OC_IPV4;OC_SECURITY;OC_PKI;OC_DYNAMIC_ALLOCATION;OC_IDD_FILE;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;__OC_RANDOM;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;OC_CLIENT;OC_SERVER;OC_IPV4;OC_TCP;OC_CLOUD;OC_SECURITY;OC_PKI;OC_DYNAMIC_ALLOCATION;OC_IDD_API;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;__OC_RANDOM;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
@@ -186,7 +186,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>WIN32;OC_CLIENT;OC_SERVER;OC_IPV4;OC_SECURITY;OC_PKI;OC_DYNAMIC_ALLOCATION;OC_IDD_FILE;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;__OC_RANDOM;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;OC_CLIENT;OC_SERVER;OC_IPV4;OC_TCP;OC_CLOUD;OC_SECURITY;OC_PKI;OC_DYNAMIC_ALLOCATION;OC_IDD_API;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;__OC_RANDOM;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
@@ -212,11 +212,15 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\api\c-timestamp\timestamp.h" />
+    <ClInclude Include="..\..\..\api\cloud\oc_cloud_internal.h" />
+    <ClInclude Include="..\..\..\api\cloud\rd_client.h" />
     <ClInclude Include="..\..\..\api\oc_events.h" />
     <ClInclude Include="..\..\..\api\oc_introspection_internal.h" />
     <ClInclude Include="..\..\..\api\oc_main.h" />
     <ClInclude Include="..\..\..\api\oc_mnt.h" />
+    <ClInclude Include="..\..\..\api\oc_resource_factory.h" />
     <ClInclude Include="..\..\..\api\oc_session_events_internal.h" />
+    <ClInclude Include="..\..\..\api\oc_swupdate_internal.h" />
     <ClInclude Include="..\..\..\deps\tinycbor\src\cbor.h" />
     <ClInclude Include="..\..\..\deps\tinycbor\src\cborjson.h" />
     <ClInclude Include="..\..\..\include\oc_acl.h" />
@@ -233,6 +237,7 @@
     <ClInclude Include="..\..\..\include\oc_cred.h" />
     <ClInclude Include="..\..\..\include\oc_discovery.h" />
     <ClInclude Include="..\..\..\include\oc_endpoint.h" />
+    <ClInclude Include="..\..\..\include\oc_enums.h" />
     <ClInclude Include="..\..\..\include\oc_helpers.h" />
     <ClInclude Include="..\..\..\include\oc_introspection.h" />
     <ClInclude Include="..\..\..\include\oc_network_events.h" />
@@ -248,6 +253,7 @@
     <ClInclude Include="..\..\..\include\oc_uuid.h" />
     <ClInclude Include="..\..\..\include\server_introspection.dat.h" />
     <ClInclude Include="..\..\..\messaging\coap\coap.h" />
+    <ClInclude Include="..\..\..\messaging\coap\coap_signal.h" />
     <ClInclude Include="..\..\..\messaging\coap\conf.h" />
     <ClInclude Include="..\..\..\messaging\coap\constants.h" />
     <ClInclude Include="..\..\..\messaging\coap\engine.h" />
@@ -256,6 +262,8 @@
     <ClInclude Include="..\..\..\messaging\coap\separate.h" />
     <ClInclude Include="..\..\..\messaging\coap\transactions.h" />
     <ClInclude Include="..\..\..\security\oc_acl_internal.h" />
+    <ClInclude Include="..\..\..\security\oc_ael.h" />
+    <ClInclude Include="..\..\..\security\oc_audit.h" />
     <ClInclude Include="..\..\..\security\oc_certs.h" />
     <ClInclude Include="..\..\..\security\oc_cred_internal.h" />
     <ClInclude Include="..\..\..\security\oc_csr.h" />
@@ -264,6 +272,7 @@
     <ClInclude Include="..\..\..\security\oc_obt_internal.h" />
     <ClInclude Include="..\..\..\security\oc_pstat.h" />
     <ClInclude Include="..\..\..\security\oc_roles.h" />
+    <ClInclude Include="..\..\..\security\oc_sdi.h" />
     <ClInclude Include="..\..\..\security\oc_sp.h" />
     <ClInclude Include="..\..\..\security\oc_store.h" />
     <ClInclude Include="..\..\..\security\oc_svr.h" />
@@ -286,7 +295,11 @@
     <ClInclude Include="..\..\oc_network_events_mutex.h" />
     <ClInclude Include="..\..\oc_random.h" />
     <ClInclude Include="..\..\oc_storage.h" />
+    <ClInclude Include="..\ipcontext.h" />
+    <ClInclude Include="..\mutex.h" />
+    <ClInclude Include="..\network_addresses.h" />
     <ClInclude Include="..\oc_config.h" />
+    <ClInclude Include="..\tcpadapter.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\api\c-timestamp\timestamp_compare.c" />
@@ -294,6 +307,13 @@
     <ClCompile Include="..\..\..\api\c-timestamp\timestamp_parse.c" />
     <ClCompile Include="..\..\..\api\c-timestamp\timestamp_tm.c" />
     <ClCompile Include="..\..\..\api\c-timestamp\timestamp_valid.c" />
+    <ClCompile Include="..\..\..\api\cloud\oc_cloud.c" />
+    <ClCompile Include="..\..\..\api\cloud\oc_cloud_apis.c" />
+    <ClCompile Include="..\..\..\api\cloud\oc_cloud_manager.c" />
+    <ClCompile Include="..\..\..\api\cloud\oc_cloud_rd.c" />
+    <ClCompile Include="..\..\..\api\cloud\oc_cloud_resource.c" />
+    <ClCompile Include="..\..\..\api\cloud\oc_cloud_store.c" />
+    <ClCompile Include="..\..\..\api\cloud\rd_client.c" />
     <ClCompile Include="..\..\..\api\oc_base64.c" />
     <ClCompile Include="..\..\..\api\oc_blockwise.c" />
     <ClCompile Include="..\..\..\api\oc_buffer.c" />
@@ -303,15 +323,18 @@
     <ClCompile Include="..\..\..\api\oc_core_res.c" />
     <ClCompile Include="..\..\..\api\oc_discovery.c" />
     <ClCompile Include="..\..\..\api\oc_endpoint.c" />
+    <ClCompile Include="..\..\..\api\oc_enums.c" />
     <ClCompile Include="..\..\..\api\oc_helpers.c" />
     <ClCompile Include="..\..\..\api\oc_introspection.c" />
     <ClCompile Include="..\..\..\api\oc_main.c" />
     <ClCompile Include="..\..\..\api\oc_mnt.c" />
     <ClCompile Include="..\..\..\api\oc_network_events.c" />
     <ClCompile Include="..\..\..\api\oc_rep.c" />
+    <ClCompile Include="..\..\..\api\oc_resource_factory.c" />
     <ClCompile Include="..\..\..\api\oc_ri.c" />
     <ClCompile Include="..\..\..\api\oc_server_api.c" />
     <ClCompile Include="..\..\..\api\oc_session_events.c" />
+    <ClCompile Include="..\..\..\api\oc_swupdate.c" />
     <ClCompile Include="..\..\..\api\oc_uuid.c" />
     <ClCompile Include="..\..\..\deps\mbedtls\library\aes.c" />
     <ClCompile Include="..\..\..\deps\mbedtls\library\aesni.c" />
@@ -358,6 +381,7 @@
     <ClCompile Include="..\..\..\deps\mbedtls\library\pkwrite.c" />
     <ClCompile Include="..\..\..\deps\mbedtls\library\pk_wrap.c" />
     <ClCompile Include="..\..\..\deps\mbedtls\library\platform.c" />
+    <ClCompile Include="..\..\..\deps\mbedtls\library\platform_util.c" />
     <ClCompile Include="..\..\..\deps\mbedtls\library\ripemd160.c" />
     <ClCompile Include="..\..\..\deps\mbedtls\library\rsa.c" />
     <ClCompile Include="..\..\..\deps\mbedtls\library\rsa_internal.c" />
@@ -386,6 +410,7 @@
     <ClCompile Include="..\..\..\deps\tinycbor\src\cborencoder_close_container_checked.c" />
     <ClCompile Include="..\..\..\deps\tinycbor\src\cborparser.c" />
     <ClCompile Include="..\..\..\messaging\coap\coap.c" />
+    <ClCompile Include="..\..\..\messaging\coap\coap_signal.c" />
     <ClCompile Include="..\..\..\messaging\coap\engine.c" />
     <ClCompile Include="..\..\..\messaging\coap\observe.c" />
     <ClCompile Include="..\..\..\messaging\coap\separate.c" />
@@ -394,6 +419,8 @@
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
     </ClCompile>
+    <ClCompile Include="..\..\..\security\oc_ael.c" />
+    <ClCompile Include="..\..\..\security\oc_audit.c" />
     <ClCompile Include="..\..\..\security\oc_certs.c" />
     <ClCompile Include="..\..\..\security\oc_cred.c" />
     <ClCompile Include="..\..\..\security\oc_csr.c" />
@@ -407,6 +434,7 @@
     <ClCompile Include="..\..\..\security\oc_pki.c" />
     <ClCompile Include="..\..\..\security\oc_pstat.c" />
     <ClCompile Include="..\..\..\security\oc_roles.c" />
+    <ClCompile Include="..\..\..\security\oc_sdi.c" />
     <ClCompile Include="..\..\..\security\oc_sp.c" />
     <ClCompile Include="..\..\..\security\oc_store.c" />
     <ClCompile Include="..\..\..\security\oc_svr.c" />
@@ -420,8 +448,15 @@
     <ClCompile Include="..\abort.c" />
     <ClCompile Include="..\clock.c" />
     <ClCompile Include="..\ipadapter.c" />
+    <ClCompile Include="..\mutex.c" />
+    <ClCompile Include="..\network_addresses.c" />
     <ClCompile Include="..\random.c" />
     <ClCompile Include="..\storage.c" />
+    <ClCompile Include="..\tcpadapter.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\security\oc_pstat.c.diff" />
+    <None Include="..\..\..\security\oc_tls.c.diff" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

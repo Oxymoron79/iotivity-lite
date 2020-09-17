@@ -106,6 +106,7 @@ display_menu(void)
   PRINT("[22] Provision identity certificate\n");
   PRINT("[23] Provision role certificate\n");
 #endif /* OC_PKI */
+  PRINT("[24] Set security domain info\n");
   PRINT("-----------------------------------------------\n");
 #ifdef OC_PKI
   PRINT("[96] Install new manufacturer trust anchor\n");
@@ -122,6 +123,7 @@ display_menu(void)
   do {                                                                         \
     if (scanf(__VA_ARGS__) <= 0) {                                             \
       PRINT("ERROR Invalid input\n");                                          \
+      fflush(stdin);                                                           \
     }                                                                          \
   } while (0)
 
@@ -129,7 +131,7 @@ static int
 app_init(void)
 {
   int ret = oc_init_platform("OCF", NULL, NULL);
-  ret |= oc_add_device("/oic/d", "oic.d.dots", "OBT", "ocf.2.0.5",
+  ret |= oc_add_device("/oic/d", "oic.d.dots", "OBT", "ocf.2.1.1",
                        "ocf.res.1.0.0,ocf.sh.1.0.0", NULL, NULL);
   oc_device_bind_resource_type(0, "oic.d.ams");
   oc_device_bind_resource_type(0, "oic.d.cms");
@@ -299,7 +301,7 @@ unowned_device_cb(oc_uuid_t *uuid, oc_endpoint_t *eps, void *data)
     eps = eps->next;
   }
 
-  oc_do_get("/oic/d", ep, NULL, &get_device, LOW_QOS, unowned_devices);
+  oc_do_get("/oic/d", ep, NULL, &get_device, HIGH_QOS, unowned_devices);
 }
 
 static void
@@ -317,7 +319,7 @@ owned_device_cb(oc_uuid_t *uuid, oc_endpoint_t *eps, void *data)
     eps = eps->next;
   }
 
-  oc_do_get("/oic/d", ep, NULL, &get_device, LOW_QOS, owned_devices);
+  oc_do_get("/oic/d", ep, NULL, &get_device, HIGH_QOS, owned_devices);
 }
 
 static void
@@ -1445,10 +1447,10 @@ provision_ace2(void)
       PRINT("\nSet wildcard resource? [0-No, 1-Yes]: ");
       SCANF("%d", &c);
       if (c == 1) {
-        PRINT("[1]: All NCRs '*' \n[2]: All NCRs with >=1 secured endpoint "
-              "'+'\n[3]: "
-              "All NCRs with >=1 unsecured endpoint '-'\n\nSelect wildcard "
-              "resource: ");
+        PRINT("[1]: All NCRs '*' \n"
+              "[2]: All NCRs with >=1 secured endpoint '+'\n"
+              "[3]: All NCRs with >=1 unsecured endpoint '-'\n"
+              "\nSelect wildcard resource: ");
         SCANF("%d", &c);
         switch (c) {
         case 1:
@@ -1542,6 +1544,7 @@ read_pem(const char *file_path, char *buffer, size_t *buffer_len)
     return -1;
   }
   fclose(fp);
+  buffer[pem_len] = '\0';
   *buffer_len = (size_t)pem_len;
   return 0;
 }
@@ -1554,10 +1557,12 @@ install_trust_anchor(void)
   char cert[8192];
   size_t cert_len = 0;
   PRINT("\nPaste certificate here, then hit <ENTER> and type \"done\": ");
-
-  while (cert_len < 4 ||
-         (cert_len >= 4 && memcmp(&cert[cert_len - 4], "done", 4) != 0)) {
-    int c = getchar();
+  int c;
+  while ((c = getchar()) == '\n' || c == '\r')
+    ;
+  for (; (cert_len < 4 ||
+          (cert_len >= 4 && memcmp(&cert[cert_len - 4], "done", 4) != 0));
+       c = getchar()) {
     if (c == EOF) {
       PRINT("ERROR processing input.. aborting\n");
       return;
@@ -1566,17 +1571,31 @@ install_trust_anchor(void)
     cert_len++;
   }
 
-  cert_len -= 4;
-  cert[cert_len - 1] = '\0';
+  while (cert[cert_len - 1] != '-' && cert_len > 1) {
+    cert_len--;
+  }
+  cert[cert_len] = '\0';
 
   int rootca_credid =
-    oc_pki_add_mfg_trust_anchor(0, (const unsigned char *)cert, cert_len);
+    oc_pki_add_mfg_trust_anchor(0, (const unsigned char *)cert, strlen(cert));
   if (rootca_credid < 0) {
     PRINT("ERROR installing root cert\n");
     return;
   }
 }
 #endif /* OC_PKI */
+
+static void
+set_sd_info()
+{
+  char name[64] = { 0 };
+  int priv = 0;
+  PRINT("\n\nEnter security domain name: ");
+  SCANF("%63s", name);
+  PRINT("\n\nChoose security domain priv[0-No, 1-Yes]: ");
+  SCANF("%d", &priv);
+  oc_obt_set_sd_info(name, priv);
+}
 
 void
 factory_presets_cb(size_t device, void *data)
@@ -1622,14 +1641,18 @@ factory_presets_cb(size_t device, void *data)
 static oc_discovery_flags_t
 resource_discovery(const char *anchor, const char *uri, oc_string_array_t types,
                    oc_interface_mask_t iface_mask, oc_endpoint_t *endpoint,
-                   oc_resource_properties_t bm, void *user_data)
+                   oc_resource_properties_t bm, bool more, void *user_data)
 {
   (void)user_data;
   (void)iface_mask;
   (void)bm;
   (void)types;
+  (void)endpoint;
   PRINT("anchor %s, uri : %s\n", anchor, uri);
-  oc_free_server_endpoints(endpoint);
+  if (!more) {
+    PRINT("----End of discovery response---\n");
+    return OC_STOP_DISCOVERY;
+  }
   return OC_CONTINUE_DISCOVERY;
 }
 
@@ -1684,6 +1707,15 @@ discover_resources(void)
   otb_mutex_unlock(app_sync_lock);
 }
 
+void
+display_device_uuid()
+{
+  char buffer[OC_UUID_LEN];
+  oc_uuid_to_str(oc_core_get_device_id(0), buffer, sizeof(buffer));
+
+  PRINT("Started device with ID: %s\n", buffer);
+}
+
 int
 main(void)
 {
@@ -1701,11 +1733,13 @@ main(void)
 
   int init;
 
-  static const oc_handler_t handler = {.init = app_init,
-                                       .signal_event_loop = signal_event_loop,
-                                       .requests_entry = issue_requests };
+  static const oc_handler_t handler = { .init = app_init,
+                                        .signal_event_loop = signal_event_loop,
+                                        .requests_entry = issue_requests };
 
+#ifdef OC_STORAGE
   oc_storage_config("./onboarding_tool_creds");
+#endif /* OC_STORAGE */
   oc_set_factory_presets_cb(factory_presets_cb, NULL);
   oc_set_con_res_announced(false);
   oc_set_max_app_data_size(16384);
@@ -1724,6 +1758,8 @@ main(void)
     return -1;
   }
 #endif
+
+  display_device_uuid();
 
   int c;
   while (quit != 1) {
@@ -1805,6 +1841,11 @@ main(void)
     case 23:
       provision_role_cert();
       break;
+#endif
+    case 24:
+      set_sd_info();
+      break;
+#ifdef OC_PKI
     case 96:
       install_trust_anchor();
       break;

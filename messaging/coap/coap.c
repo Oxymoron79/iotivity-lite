@@ -54,9 +54,10 @@
 #ifdef OC_TCP
 #include "coap_signal.h"
 #endif /* OC_TCP */
-
+#include "oc_ri.h"
 #ifdef OC_SECURITY
 #include "security/oc_tls.h"
+#include "security/oc_audit.h"
 #endif
 
 /*---------------------------------------------------------------------------*/
@@ -641,7 +642,7 @@ coap_parse_token_option(void *packet, uint8_t *data, uint32_t data_len,
 #ifdef OC_SPEC_VER_OIC
           && coap_pkt->content_format != APPLICATION_CBOR
 #endif /* OC_SPEC_VER_OIC */
-          )
+      )
         return UNSUPPORTED_MEDIA_TYPE_4_15;
       break;
     case COAP_OPTION_MAX_AGE:
@@ -665,7 +666,7 @@ coap_parse_token_option(void *packet, uint8_t *data, uint32_t data_len,
 #ifdef OC_SPEC_VER_OIC
           && coap_pkt->accept != APPLICATION_CBOR
 #endif /* OC_SPEC_VER_OIC */
-          )
+      )
         return NOT_ACCEPTABLE_4_06;
       break;
 #if 0
@@ -796,7 +797,7 @@ coap_parse_token_option(void *packet, uint8_t *data, uint32_t data_len,
 #ifdef OC_SPEC_VER_OIC
           && version != OIC_VER_1_1_0
 #endif /* OC_SPEC_VER_OIC */
-          ) {
+      ) {
         OC_WRN("Unsupported version %d %u", option_number, version);
         return UNSUPPORTED_MEDIA_TYPE_4_15;
       }
@@ -826,9 +827,9 @@ coap_tcp_set_header_fields(void *packet, uint8_t *num_extended_length_bytes,
   coap_pkt->buffer[0] = 0x00;
   coap_pkt->buffer[0] |=
     COAP_TCP_HEADER_LEN_MASK & (*len) << COAP_TCP_HEADER_LEN_POSITION;
-  coap_pkt->buffer[0] |= COAP_HEADER_TOKEN_LEN_MASK &
-                         (coap_pkt->token_len)
-                           << COAP_HEADER_TOKEN_LEN_POSITION;
+  coap_pkt->buffer[0] |=
+    COAP_HEADER_TOKEN_LEN_MASK & (coap_pkt->token_len)
+                                   << COAP_HEADER_TOKEN_LEN_POSITION;
 
   int i = 0;
   for (i = 1; i <= *num_extended_length_bytes; i++) {
@@ -977,11 +978,11 @@ coap_udp_set_header_fields(void *packet)
   coap_pkt->buffer[0] = 0x00;
   coap_pkt->buffer[0] |= COAP_HEADER_VERSION_MASK &
                          (coap_pkt->version) << COAP_HEADER_VERSION_POSITION;
+  coap_pkt->buffer[0] |= COAP_HEADER_TYPE_MASK & (coap_pkt->type)
+                                                   << COAP_HEADER_TYPE_POSITION;
   coap_pkt->buffer[0] |=
-    COAP_HEADER_TYPE_MASK & (coap_pkt->type) << COAP_HEADER_TYPE_POSITION;
-  coap_pkt->buffer[0] |= COAP_HEADER_TOKEN_LEN_MASK &
-                         (coap_pkt->token_len)
-                           << COAP_HEADER_TOKEN_LEN_POSITION;
+    COAP_HEADER_TOKEN_LEN_MASK & (coap_pkt->token_len)
+                                   << COAP_HEADER_TOKEN_LEN_POSITION;
   coap_pkt->buffer[1] = coap_pkt->code;
   coap_pkt->buffer[2] = (uint8_t)((coap_pkt->mid) >> 8);
   coap_pkt->buffer[3] = (uint8_t)(coap_pkt->mid);
@@ -1154,7 +1155,7 @@ coap_udp_parse_message(void *packet, uint8_t *data, uint16_t data_len)
   coap_status_t ret =
     coap_parse_token_option(packet, data, data_len, current_option);
   if (COAP_NO_ERROR != ret) {
-    OC_DBG("coap_parse_token_option failed!");
+    OC_DBG("coap_parse_token_option failed! %d", ret);
     return ret;
   }
 
@@ -1268,7 +1269,7 @@ coap_set_token(void *packet, const uint8_t *token, size_t token_len)
 
   return coap_pkt->token_len;
 }
-#ifdef OC_CLIENT
+
 int
 coap_get_header_content_format(void *packet, unsigned int *format)
 {
@@ -1280,7 +1281,7 @@ coap_get_header_content_format(void *packet, unsigned int *format)
   *format = coap_pkt->content_format;
   return 1;
 }
-#endif
+
 int
 coap_set_header_content_format(void *packet, unsigned int format)
 {
@@ -1302,7 +1303,6 @@ coap_get_header_accept(void *packet, unsigned int *accept)
   *accept = coap_pkt->accept;
   return 1;
 }
-#ifdef OC_CLIENT
 int
 coap_set_header_accept(void *packet, unsigned int accept)
 {
@@ -1312,7 +1312,6 @@ coap_set_header_accept(void *packet, unsigned int accept)
   SET_OPTION(coap_pkt, COAP_OPTION_ACCEPT);
   return 1;
 }
-#endif
 /*---------------------------------------------------------------------------*/
 #if 0
 int coap_get_header_max_age(void *packet, uint32_t *age)

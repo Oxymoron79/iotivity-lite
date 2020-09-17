@@ -131,7 +131,7 @@ check_new_ip_interfaces(void)
   for (interface = ifs; interface != NULL; interface = interface->ifa_next) {
     /* Ignore interfaces that are down and the loopback interface */
     if (!(interface->ifa_flags & IFF_UP) ||
-        interface->ifa_flags & IFF_LOOPBACK) {
+        (interface->ifa_flags & IFF_LOOPBACK)) {
       continue;
     }
     /* Obtain interface index for this address */
@@ -256,8 +256,7 @@ get_ip_context_for_device(size_t device)
 
 #ifdef OC_IPV4
 static int
-add_mcast_sock_to_ipv4_mcast_group(int mcast_sock,
-                                   const struct in_addr *local,
+add_mcast_sock_to_ipv4_mcast_group(int mcast_sock, const struct in_addr *local,
                                    int interface_index)
 {
   struct ip_mreqn mreq;
@@ -342,7 +341,7 @@ configure_mcast_socket(int mcast_sock, int sa_family)
   for (interface = ifs; interface != NULL; interface = interface->ifa_next) {
     /* Ignore interfaces that are down and the loopback interface */
     if (!(interface->ifa_flags & IFF_UP) ||
-        interface->ifa_flags & IFF_LOOPBACK) {
+        (interface->ifa_flags & IFF_LOOPBACK)) {
       continue;
     }
     /* Ignore interfaces not belonging to the address family under consideration
@@ -693,7 +692,7 @@ recv_msg(int sock, uint8_t *recv_buf, int recv_buf_size,
 
   int ret = recvmsg(sock, &msg, 0);
 
-  if (ret < 0 || msg.msg_flags & MSG_TRUNC || msg.msg_flags & MSG_CTRUNC) {
+  if (ret < 0 || (msg.msg_flags & MSG_TRUNC) || (msg.msg_flags & MSG_CTRUNC)) {
     OC_ERR("recvmsg returned with an error: %d", errno);
     return -1;
   }
@@ -725,22 +724,7 @@ recv_msg(int sock, uint8_t *recv_buf, int recv_buf_size,
         memcpy(endpoint->addr_local.ipv6.address, pktinfo->ipi6_addr.s6_addr,
                16);
       } else {
-        /* For a multicast receiving socket, check the incoming interface
-               * index and save that interface's highest scoped address in the
-               * endpoint's addr_local attribute. This would be used as the
-         * source
-               * address of a multicast response.
-               */
-        oc_endpoint_t *dst = oc_connectivity_get_endpoints(endpoint->device);
-        while (dst != NULL &&
-               (dst->interface_index != endpoint->interface_index ||
-                !(dst->flags & IPV6))) {
-          dst = dst->next;
-        }
-        if (dst == NULL) {
-          return -1;
-        }
-        memcpy(endpoint->addr_local.ipv6.address, dst->addr.ipv6.address, 16);
+        memset(endpoint->addr_local.ipv6.address, 0, 16);
       }
       break;
     }
@@ -759,16 +743,7 @@ recv_msg(int sock, uint8_t *recv_buf, int recv_buf_size,
       if (!multicast) {
         memcpy(endpoint->addr_local.ipv4.address, &pktinfo->ipi_addr.s_addr, 4);
       } else {
-        oc_endpoint_t *dst = oc_connectivity_get_endpoints(endpoint->device);
-        while (dst != NULL &&
-               (dst->interface_index != endpoint->interface_index ||
-                !(dst->flags & IPV4))) {
-          dst = dst->next;
-        }
-        if (dst == NULL) {
-          return -1;
-        }
-        memcpy(endpoint->addr_local.ipv4.address, dst->addr.ipv4.address, 4);
+        memset(endpoint->addr_local.ipv4.address, 0, 4);
       }
       break;
     }
@@ -954,6 +929,7 @@ network_event_thread(void *data)
     }
   }
   pthread_exit(NULL);
+  return NULL;
 }
 
 int
@@ -1136,7 +1112,7 @@ oc_send_discovery_request(oc_message_t *message)
              (interface->ifa_name ? interface->ifa_name : "<none>"));
       continue;
     }
-    if (message->endpoint.flags & IPV6 && interface->ifa_addr &&
+    if ((message->endpoint.flags & IPV6) && interface->ifa_addr &&
         interface->ifa_addr->sa_family == AF_INET6) {
       struct sockaddr_in6 *addr = (struct sockaddr_in6 *)interface->ifa_addr;
       if (IN6_IS_ADDR_LINKLOCAL(&addr->sin6_addr)) {
@@ -1174,8 +1150,7 @@ oc_send_discovery_request(oc_message_t *message)
       struct sockaddr_in *addr = (struct sockaddr_in *)interface->ifa_addr;
       if (setsockopt(dev->server4_sock, IPPROTO_IP, IP_MULTICAST_IF,
                      &addr->sin_addr, sizeof(addr->sin_addr)) == -1) {
-        OC_ERR("setting socket option for default IP_MULTICAST_IF: %d",
-               errno);
+        OC_ERR("setting socket option for default IP_MULTICAST_IF: %d", errno);
         goto done;
       }
       message->endpoint.interface_index = if_nametoindex(interface->ifa_name);
@@ -1485,6 +1460,14 @@ oc_connectivity_init(size_t device)
     OC_ERR("setting reuseaddr option %d", errno);
     return -1;
   }
+#ifdef IPV6_ADDR_PREFERENCES
+  int prefer = 2;
+  if (setsockopt(dev->server_sock, IPPROTO_IPV6, IPV6_ADDR_PREFERENCES, &prefer,
+                 sizeof(prefer)) == -1) {
+    OC_ERR("setting src addr preference %d", errno);
+    return -1;
+  }
+#endif /* IPV6_ADDR_PREFERENCES */
   if (bind(dev->server_sock, (struct sockaddr *)&dev->server,
            sizeof(dev->server)) == -1) {
     OC_ERR("binding server socket %d", errno);
@@ -1514,6 +1497,13 @@ oc_connectivity_init(size_t device)
     OC_ERR("setting reuseaddr option %d", errno);
     return -1;
   }
+#ifdef IPV6_ADDR_PREFERENCES
+  if (setsockopt(dev->mcast_sock, IPPROTO_IPV6, IPV6_ADDR_PREFERENCES, &prefer,
+                 sizeof(prefer)) == -1) {
+    OC_ERR("setting src addr preference %d", errno);
+    return -1;
+  }
+#endif /* IPV6_ADDR_PREFERENCES */
   if (bind(dev->mcast_sock, (struct sockaddr *)&dev->mcast,
            sizeof(dev->mcast)) == -1) {
     OC_ERR("binding mcast socket %d", errno);
@@ -1531,6 +1521,13 @@ oc_connectivity_init(size_t device)
     OC_ERR("setting reuseaddr option %d", errno);
     return -1;
   }
+#ifdef IPV6_ADDR_PREFERENCES
+  if (setsockopt(dev->secure_sock, IPPROTO_IPV6, IPV6_ADDR_PREFERENCES, &prefer,
+                 sizeof(prefer)) == -1) {
+    OC_ERR("setting src addr preference %d", errno);
+    return -1;
+  }
+#endif /* IPV6_ADDR_PREFERENCES */
   if (bind(dev->secure_sock, (struct sockaddr *)&dev->secure,
            sizeof(dev->secure)) == -1) {
     OC_ERR("binding IPv6 secure socket %d", errno);

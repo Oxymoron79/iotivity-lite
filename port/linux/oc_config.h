@@ -6,8 +6,7 @@
 #include <time.h>
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 typedef uint64_t oc_clock_time_t;
@@ -31,10 +30,12 @@ typedef uint64_t oc_clock_time_t;
 //#define OC_COLLECTIONS_IF_CREATE or run "make" with CREATE=1
 /* Add support for the maintenance resource */
 //#define OC_MNT or run "make" with MNT=1
-
+/* Add batch interface support to /oic/res */
+#define OC_RES_BATCH_SUPPORT
 /* Add support for dns lookup to the endpoint */
 #define OC_DNS_LOOKUP
-#define OC_DNS_LOOKUP_IPV6
+#define OC_DNS_CACHE
+//#define OC_DNS_LOOKUP_IPV6
 
 /* If we selected support for dynamic memory allocation */
 #ifdef OC_DYNAMIC_ALLOCATION
@@ -95,6 +96,20 @@ typedef uint64_t oc_clock_time_t;
 #define OC_MAX_SESSION_EVENT_CBS (2)
 
 #endif /* !OC_DYNAMIC_ALLOCATION */
+
+/* library features that require persistent storage */
+#ifdef OC_SECURITY
+#define OC_STORAGE
+#endif
+#ifdef OC_IDD_API
+#define OC_STORAGE
+#endif
+#ifdef OC_CLOUD
+#define OC_STORAGE
+#endif
+#ifdef OC_SOFTWARE_UPDATE
+#define OC_STORAGE
+#endif
 
 #ifdef __cplusplus
 }

@@ -383,8 +383,8 @@ oc_parse_endpoint_string(oc_string_t *endpoint_str, oc_endpoint_t *endpoint,
 
   /* Extract a uri path if requested and available */
   const char *u = NULL;
+  u = memchr(address, '/', len);
   if (uri) {
-    u = memchr(address, '/', len);
     if (u) {
       oc_new_string(uri, u, (len - (u - address)));
     }
@@ -435,7 +435,11 @@ oc_parse_endpoint_string(oc_string_t *endpoint_str, oc_endpoint_t *endpoint,
   if (('A' <= address[address_len - 1] && 'Z' >= address[address_len - 1]) ||
       ('a' <= address[address_len - 1] && 'z' >= address[address_len - 1])) {
 #ifdef OC_DNS_LOOKUP
-    char domain[address_len + 1];
+    if (address_len > 254) {
+      // https://www.rfc-editor.org/rfc/rfc1035.html#section-2.3.4
+      return -1;
+    }
+    char domain[255];
     strncpy(domain, address, address_len);
     domain[address_len] = '\0';
 #ifdef OC_DNS_LOOKUP_IPV6
@@ -493,6 +497,53 @@ oc_string_to_endpoint(oc_string_t *endpoint_str, oc_endpoint_t *endpoint,
 }
 
 int
+oc_endpoint_string_parse_path(oc_string_t *endpoint_str, oc_string_t *path)
+{
+  if (!endpoint_str) {
+    return -1;
+  }
+  if (!path) {
+    return -1;
+  }
+
+  const char *address = NULL;
+
+  address = strstr(oc_string(*endpoint_str), "://");
+  if (!address) {
+    return -1;
+  }
+  // 3 is string length of "://"
+  address += 3;
+
+  size_t len =
+    oc_string_len(*endpoint_str) - (address - oc_string(*endpoint_str));
+
+  // the smallest possible address is '0' anything smaller is invalid.
+  if (len < 1) {
+    return -1;
+  }
+  /* Extract a uri path if available */
+  const char *path_start = NULL;
+  const char *query_start = NULL;
+
+  path_start = memchr(address, '/', len);
+
+  if (!path_start) {
+    // no path found return error
+    return -1;
+  }
+
+  query_start = memchr((address + (path_start - address)), '?',
+                       (len - (path_start - address)));
+  if (query_start) {
+    oc_new_string(path, path_start, (query_start - path_start));
+  } else {
+    oc_new_string(path, path_start, (len - (path_start - address)));
+  }
+  return 0;
+}
+
+int
 oc_ipv6_endpoint_is_link_local(oc_endpoint_t *endpoint)
 {
   if (!endpoint || !(endpoint->flags & IPV6)) {
@@ -506,7 +557,7 @@ oc_ipv6_endpoint_is_link_local(oc_endpoint_t *endpoint)
 }
 
 int
-oc_endpoint_compare_address(oc_endpoint_t *ep1, oc_endpoint_t *ep2)
+oc_endpoint_compare_address(const oc_endpoint_t *ep1, const oc_endpoint_t *ep2)
 {
   if (!ep1 || !ep2)
     return -1;
@@ -557,6 +608,32 @@ oc_endpoint_compare(const oc_endpoint_t *ep1, const oc_endpoint_t *ep2)
 #endif /* OC_IPV4 */
   // TODO: Add support for other endpoint types
   return -1;
+}
+
+void
+oc_endpoint_copy(oc_endpoint_t *dst, oc_endpoint_t *src)
+{
+  if (dst && src) {
+    memcpy(dst, src, sizeof(oc_endpoint_t));
+    dst->next = NULL;
+  }
+}
+
+void
+oc_endpoint_list_copy(oc_endpoint_t **dst, oc_endpoint_t *src)
+{
+  if (dst && src) {
+    oc_endpoint_t *ep = oc_new_endpoint();
+    *dst = ep;
+    while (src && ep) {
+      oc_endpoint_copy(ep, src);
+      src = src->next;
+      if (src) {
+        ep->next = oc_new_endpoint();
+        ep = ep->next;
+      }
+    }
+  }
 }
 
 #ifdef OC_CLIENT

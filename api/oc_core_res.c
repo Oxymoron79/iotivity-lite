@@ -45,7 +45,8 @@ static oc_device_info_t oc_device_info[OC_MAX_NUM_DEVICES];
 #endif /* !OC_DYNAMIC_ALLOCATION */
 static oc_platform_info_t oc_platform_info;
 
-static bool announce_con_res = true;
+static bool announce_con_res = false;
+static int res_latency = 0;
 static size_t device_count = 0;
 
 /* Although used several times in the OCF spec, "/oic/con" is not
@@ -273,6 +274,18 @@ oc_get_con_res_announced(void)
 }
 
 void
+oc_core_set_latency(int latency)
+{
+  res_latency = latency;
+}
+
+int
+oc_core_get_latency(void)
+{
+  return res_latency;
+}
+
+void
 oc_set_con_res_announced(bool announce)
 {
   announce_con_res = announce;
@@ -323,9 +336,7 @@ oc_core_add_new_device(const char *uri, const char *rt, const char *name,
       OC_DISCOVERABLE, oc_core_device_handler, 0, 0, 0, 2, rt, "oic.wk.d");
   }
 
-#ifndef OC_SECURITY
   oc_gen_uuid(&oc_device_info[device_count].piid);
-#endif /* !OC_SECURITY */
 
   oc_new_string(&oc_device_info[device_count].name, name, strlen(name));
   oc_new_string(&oc_device_info[device_count].icv, spec_version,
@@ -594,22 +605,28 @@ oc_core_get_resource_by_uri(const char *uri, size_t device)
       type = OCF_SEC_PSTAT;
     } else if (memcmp(uri + skip, "oic/sec/acl2", 12) == 0) {
       type = OCF_SEC_ACL;
+    } else if (memcmp(uri + skip, "oic/sec/ael", 11) == 0) {
+      type = OCF_SEC_AEL;
     } else if (memcmp(uri + skip, "oic/sec/cred", 12) == 0) {
       type = OCF_SEC_CRED;
     }
+  } else if ((strlen(uri) - skip) == 10 &&
+             memcmp(uri + skip, "oic/sec/sp", 10) == 0) {
+    type = OCF_SEC_SP;
   }
 #ifdef OC_PKI
-  else if ((strlen(uri) - skip) == 10 &&
-           memcmp(uri + skip, "oic/sec/sp", 10) == 0) {
-    type = OCF_SEC_SP;
-  } else if ((strlen(uri) - skip) == 11 &&
-             memcmp(uri + skip, "oic/sec/csr", 11) == 0) {
+  else if ((strlen(uri) - skip) == 11 &&
+           memcmp(uri + skip, "oic/sec/csr", 11) == 0) {
     type = OCF_SEC_CSR;
   } else if ((strlen(uri) - skip) == 13 &&
              memcmp(uri + skip, "oic/sec/roles", 13) == 0) {
     type = OCF_SEC_ROLES;
   }
 #endif /* OC_PKI */
+  else if ((strlen(uri) - skip) == 11 &&
+           memcmp(uri + skip, "oic/sec/sdi", 11) == 0) {
+    type = OCF_SEC_SDI;
+  }
 #endif /* OC_SECURITY */
 #ifdef OC_SOFTWARE_UPDATE
   else if ((strlen(uri) - skip) == 2 && memcmp(uri + skip, "sw", 2) == 0) {

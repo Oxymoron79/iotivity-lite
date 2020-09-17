@@ -124,7 +124,7 @@ check_new_ip_interfaces(void)
   for (interface = ifs; interface != NULL; interface = interface->ifa_next) {
     /* Ignore interfaces that are down and the loopback interface */
     if (!(interface->ifa_flags & IFF_UP) ||
-        interface->ifa_flags & IFF_LOOPBACK) {
+        (interface->ifa_flags & IFF_LOOPBACK)) {
       continue;
     }
     /* Obtain interface index for this address */
@@ -331,7 +331,7 @@ configure_mcast_socket(int mcast_sock, int sa_family)
   for (interface = ifs; interface != NULL; interface = interface->ifa_next) {
     /* Ignore interfaces that are down and the loopback interface */
     if (!(interface->ifa_flags & IFF_UP) ||
-        interface->ifa_flags & IFF_LOOPBACK) {
+        (interface->ifa_flags & IFF_LOOPBACK)) {
       continue;
     }
     /* Ignore interfaces not belonging to the address family under consideration
@@ -681,7 +681,7 @@ recv_msg(int sock, uint8_t *recv_buf, int recv_buf_size,
 
   int ret = recvmsg(sock, &msg, 0);
 
-  if (ret < 0 || msg.msg_flags & MSG_TRUNC || msg.msg_flags & MSG_CTRUNC) {
+  if (ret < 0 || (msg.msg_flags & MSG_TRUNC) || (msg.msg_flags & MSG_CTRUNC)) {
     OC_ERR("recvmsg returned with an error: %d", errno);
     return -1;
   }
@@ -713,22 +713,7 @@ recv_msg(int sock, uint8_t *recv_buf, int recv_buf_size,
         memcpy(endpoint->addr_local.ipv6.address, pktinfo->ipi6_addr.s6_addr,
                16);
       } else {
-        /* For a multicast receiving socket, check the incoming interface
-               * index and save that interface's highest scoped address in the
-               * endpoint's addr_local attribute. This would be used as the
-         * source
-               * address of a multicast response.
-               */
-        oc_endpoint_t *dst = oc_connectivity_get_endpoints(endpoint->device);
-        while (dst != NULL &&
-               (dst->interface_index != endpoint->interface_index ||
-                !(dst->flags & IPV6))) {
-          dst = dst->next;
-        }
-        if (dst == NULL) {
-          return -1;
-        }
-        memcpy(endpoint->addr_local.ipv6.address, dst->addr.ipv6.address, 16);
+        memset(endpoint->addr_local.ipv6.address, 0, 16);
       }
       break;
     }
@@ -747,16 +732,7 @@ recv_msg(int sock, uint8_t *recv_buf, int recv_buf_size,
       if (!multicast) {
         memcpy(endpoint->addr_local.ipv4.address, &pktinfo->ipi_addr.s_addr, 4);
       } else {
-        oc_endpoint_t *dst = oc_connectivity_get_endpoints(endpoint->device);
-        while (dst != NULL &&
-               (dst->interface_index != endpoint->interface_index ||
-                !(dst->flags & IPV4))) {
-          dst = dst->next;
-        }
-        if (dst == NULL) {
-          return -1;
-        }
-        memcpy(endpoint->addr_local.ipv4.address, dst->addr.ipv4.address, 4);
+        memset(endpoint->addr_local.ipv4.address, 0, 4);
       }
       break;
     }
@@ -951,6 +927,7 @@ network_event_thread(void *data)
     }
   }
   pthread_exit(NULL);
+  return NULL;
 }
 
 static int
@@ -1125,9 +1102,10 @@ oc_send_discovery_request(oc_message_t *message)
   IN6_IS_ADDR_MULTICAST(addr) && ((((const uint8_t *)(addr))[1] & 0x0f) == 0x03)
 
   for (interface = ifs; interface != NULL; interface = interface->ifa_next) {
-    if (!(interface->ifa_flags & IFF_UP) || interface->ifa_flags & IFF_LOOPBACK)
+    if (!(interface->ifa_flags & IFF_UP) ||
+        (interface->ifa_flags & IFF_LOOPBACK))
       continue;
-    if (message->endpoint.flags & IPV6 && interface->ifa_addr &&
+    if ((message->endpoint.flags & IPV6) && interface->ifa_addr &&
         interface->ifa_addr->sa_family == AF_INET6) {
       struct sockaddr_in6 *addr = (struct sockaddr_in6 *)interface->ifa_addr;
       if (IN6_IS_ADDR_LINKLOCAL(&addr->sin6_addr)) {
@@ -1476,6 +1454,14 @@ oc_connectivity_init(size_t device)
     OC_ERR("setting reuseaddr option %d", errno);
     return -1;
   }
+#ifdef IPV6_ADDR_PREFERENCES
+  int prefer = 2;
+  if (setsockopt(dev->server_sock, IPPROTO_IPV6, IPV6_ADDR_PREFERENCES, &prefer,
+                 sizeof(prefer)) == -1) {
+    OC_ERR("setting src addr preference %d", errno);
+    return -1;
+  }
+#endif /* IPV6_ADDR_PREFERENCES */
   if (bind(dev->server_sock, (struct sockaddr *)&dev->server,
            sizeof(dev->server)) == -1) {
     OC_ERR("binding server socket %d", errno);
@@ -1505,6 +1491,13 @@ oc_connectivity_init(size_t device)
     OC_ERR("setting reuseaddr option %d", errno);
     return -1;
   }
+#ifdef IPV6_ADDR_PREFERENCES
+  if (setsockopt(dev->mcast_sock, IPPROTO_IPV6, IPV6_ADDR_PREFERENCES, &prefer,
+                 sizeof(prefer)) == -1) {
+    OC_ERR("setting src addr preference %d", errno);
+    return -1;
+  }
+#endif /* IPV6_ADDR_PREFERENCES */
   if (bind(dev->mcast_sock, (struct sockaddr *)&dev->mcast,
            sizeof(dev->mcast)) == -1) {
     OC_ERR("binding mcast socket %d", errno);
@@ -1522,6 +1515,13 @@ oc_connectivity_init(size_t device)
     OC_ERR("setting reuseaddr option %d", errno);
     return -1;
   }
+#ifdef IPV6_ADDR_PREFERENCES
+  if (setsockopt(dev->secure_sock, IPPROTO_IPV6, IPV6_ADDR_PREFERENCES, &prefer,
+                 sizeof(prefer)) == -1) {
+    OC_ERR("setting src addr preference %d", errno);
+    return -1;
+  }
+#endif /* IPV6_ADDR_PREFERENCES */
   if (bind(dev->secure_sock, (struct sockaddr *)&dev->secure,
            sizeof(dev->secure)) == -1) {
     OC_ERR("binding IPv6 secure socket %d", errno);
@@ -1657,6 +1657,59 @@ oc_connectivity_end_session(oc_endpoint_t *endpoint)
 #endif /* OC_TCP */
 
 #ifdef OC_DNS_LOOKUP
+#ifdef OC_DNS_CACHE
+typedef struct oc_dns_cache_t
+{
+  struct oc_dns_cache_t *next;
+  oc_string_t domain;
+  union dev_addr addr;
+} oc_dns_cache_t;
+
+OC_MEMB(dns_s, oc_dns_cache_t, 1);
+OC_LIST(dns_cache);
+
+static oc_dns_cache_t *
+oc_dns_lookup_cache(const char *domain)
+{
+  if (oc_list_length(dns_cache) == 0) {
+    return NULL;
+  }
+  oc_dns_cache_t *c = (oc_dns_cache_t *)oc_list_head(dns_cache);
+  while (c) {
+    if (strlen(domain) == oc_string_len(c->domain) &&
+        memcmp(domain, oc_string(c->domain), oc_string_len(c->domain)) == 0) {
+      return c;
+    }
+    c = c->next;
+  }
+  return NULL;
+}
+
+static int
+oc_dns_cache_domain(const char *domain, union dev_addr *addr)
+{
+  oc_dns_cache_t *c = (oc_dns_cache_t *)oc_memb_alloc(&dns_s);
+  if (c) {
+    oc_new_string(&c->domain, domain, strlen(domain));
+    memcpy(&c->addr, addr, sizeof(union dev_addr));
+    oc_list_add(dns_cache, c);
+    return 0;
+  }
+  return -1;
+}
+
+void
+oc_dns_clear_cache(void)
+{
+  oc_dns_cache_t *c = (oc_dns_cache_t *)oc_list_pop(dns_cache);
+  while (c) {
+    oc_free_string(&c->domain);
+    oc_memb_free(&dns_s, c);
+    c = (oc_dns_cache_t *)oc_list_pop(dns_cache);
+  }
+}
+#endif /* OC_DNS_CACHE */
+
 int
 oc_dns_lookup(const char *domain, oc_string_t *addr, enum transport_flags flags)
 {
@@ -1664,20 +1717,55 @@ oc_dns_lookup(const char *domain, oc_string_t *addr, enum transport_flags flags)
     OC_ERR("Error of input parameters");
     return -1;
   }
+  int ret = -1;
+  union dev_addr a;
 
-  struct addrinfo hints, *result = NULL;
-  memset(&hints, 0, sizeof(hints));
-  hints.ai_family = (flags & IPV6) ? AF_INET6 : AF_INET;
-  hints.ai_socktype = (flags & TCP) ? SOCK_STREAM : SOCK_DGRAM;
-  int ret = getaddrinfo(domain, NULL, &hints, &result);
+#ifdef OC_DNS_CACHE
+  oc_dns_cache_t *c = oc_dns_lookup_cache(domain);
+
+  if (!c) {
+#endif /* OC_DNS_CACHE */
+    memset(&a, 0, sizeof(union dev_addr));
+
+    struct addrinfo hints, *result = NULL;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = (flags & IPV6) ? AF_INET6 : AF_INET;
+    hints.ai_socktype = (flags & TCP) ? SOCK_STREAM : SOCK_DGRAM;
+    ret = getaddrinfo(domain, NULL, &hints, &result);
+
+    if (ret == 0) {
+      if (flags & IPV6) {
+        struct sockaddr_in6 *r = (struct sockaddr_in6 *)result->ai_addr;
+        memcpy(a.ipv6.address, r->sin6_addr.s6_addr,
+               sizeof(r->sin6_addr.s6_addr));
+        a.ipv6.port = ntohs(r->sin6_port);
+        a.ipv6.scope = r->sin6_scope_id;
+      }
+#ifdef OC_IPV4
+      else {
+        struct sockaddr_in *r = (struct sockaddr_in *)result->ai_addr;
+        memcpy(a.ipv4.address, &r->sin_addr.s_addr, sizeof(r->sin_addr.s_addr));
+        a.ipv4.port = ntohs(r->sin_port);
+      }
+#endif /* OC_IPV4 */
+#ifdef OC_DNS_CACHE
+      oc_dns_cache_domain(domain, &a);
+#endif /* OC_DNS_CACHE */
+    }
+    freeaddrinfo(result);
+#ifdef OC_DNS_CACHE
+  } else {
+    ret = 0;
+    memcpy(&a, &c->addr, sizeof(union dev_addr));
+  }
+#endif /* OC_DNS_CACHE */
 
   if (ret == 0) {
     char address[INET6_ADDRSTRLEN + 2] = { 0 };
     const char *dest = NULL;
     if (flags & IPV6) {
-      struct sockaddr_in6 *s_addr = (struct sockaddr_in6 *)result->ai_addr;
       address[0] = '[';
-      dest = inet_ntop(AF_INET6, (void *)&s_addr->sin6_addr, address + 1,
+      dest = inet_ntop(AF_INET6, (void *)a.ipv6.address, address + 1,
                        INET6_ADDRSTRLEN);
       size_t addr_len = strlen(address);
       address[addr_len] = ']';
@@ -1685,9 +1773,8 @@ oc_dns_lookup(const char *domain, oc_string_t *addr, enum transport_flags flags)
     }
 #ifdef OC_IPV4
     else {
-      struct sockaddr_in *s_addr = (struct sockaddr_in *)result->ai_addr;
       dest =
-        inet_ntop(AF_INET, (void *)&s_addr->sin_addr, address, INET_ADDRSTRLEN);
+        inet_ntop(AF_INET, (void *)a.ipv4.address, address, INET_ADDRSTRLEN);
     }
 #endif /* OC_IPV4 */
     if (dest) {
@@ -1698,7 +1785,6 @@ oc_dns_lookup(const char *domain, oc_string_t *addr, enum transport_flags flags)
     }
   }
 
-  freeaddrinfo(result);
   return ret;
 }
 #endif /* OC_DNS_LOOKUP */

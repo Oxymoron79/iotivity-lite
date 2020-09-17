@@ -146,8 +146,6 @@ _register_handler(oc_cloud_context_t *ctx, oc_client_response_t *data)
 
   oc_rep_t *payload = data->payload;
 
-  ctx->store.status = 0;
-
   char *value = NULL;
   size_t size = 0;
 
@@ -162,6 +160,8 @@ _register_handler(oc_cloud_context_t *ctx, oc_client_response_t *data)
     if (!ci_server || oc_string_len(ctx->store.ci_server) != size ||
         strcmp(ci_server, value)) {
       cloud_close_endpoint(ctx->cloud_ep);
+      memset(ctx->cloud_ep, 0, sizeof(oc_endpoint_t));
+      ctx->cloud_ep_state = OC_SESSION_DISCONNECTED;
     }
     cloud_set_string(&ctx->store.ci_server, value, size);
   }
@@ -193,12 +193,14 @@ _register_handler(oc_cloud_context_t *ctx, oc_client_response_t *data)
   cloud_set_last_error(ctx, CLOUD_OK);
 
   ctx->store.status |= OC_CLOUD_REGISTERED;
-  ctx->cps = OC_CPS_REGISTERED;
+  ctx->store.cps = OC_CPS_REGISTERED;
+
+  oc_notify_observers(ctx->cloud_conf);
 
   return 0;
 
 error:
-  ctx->cps = OC_CPS_FAILED;
+  ctx->store.cps = OC_CPS_FAILED;
   ctx->store.status |= OC_CLOUD_FAILURE;
   if (ctx->last_error == 0) {
     cloud_set_last_error(ctx, CLOUD_ERROR_RESPONSE);
@@ -251,15 +253,13 @@ cloud_register(void *data)
     ctx->retry_count++;
     if (!is_retry_over(ctx)) {
       bool cannotConnect = true;
-      if (oc_string(ctx->store.ci_server) &&
-          oc_string_to_endpoint(&ctx->store.ci_server, ctx->cloud_ep, NULL) ==
-            0 &&
+      if (oc_string(ctx->store.ci_server) && conv_cloud_endpoint(ctx) == 0 &&
           cloud_access_register(
             ctx->cloud_ep, oc_string(ctx->store.auth_provider), NULL,
             oc_string(ctx->store.uid), oc_string(ctx->store.access_token),
             ctx->device, cloud_register_handler, data)) {
         cannotConnect = false;
-        ctx->cps = OC_CPS_REGISTERING;
+        ctx->store.cps = OC_CPS_REGISTERING;
       }
       if (cannotConnect) {
         cloud_set_last_error(ctx, CLOUD_ERROR_CONNECT);
@@ -297,7 +297,7 @@ _login_handler(oc_cloud_context_t *ctx, oc_client_response_t *data)
   return 0;
 
 error:
-  ctx->cps = OC_CPS_FAILED;
+  ctx->store.cps = OC_CPS_FAILED;
   ctx->store.status |= OC_CLOUD_FAILURE;
   if (ctx->last_error == 0) {
     cloud_set_last_error(ctx, CLOUD_ERROR_RESPONSE);
@@ -361,8 +361,7 @@ cloud_login(void *data)
     ctx->retry_count++;
     if (!is_retry_over(ctx)) {
       bool cannotConnect = true;
-      if (oc_string_to_endpoint(&ctx->store.ci_server, ctx->cloud_ep, NULL) ==
-            0 &&
+      if (conv_cloud_endpoint(ctx) == 0 &&
           cloud_access_login(ctx->cloud_ep, oc_string(ctx->store.uid),
                              oc_string(ctx->store.access_token), ctx->device,
                              cloud_login_handler, ctx)) {
@@ -431,7 +430,7 @@ error:
   if (ctx->last_error == 0) {
     cloud_set_last_error(ctx, CLOUD_ERROR_REFRESH_ACCESS_TOKEN);
   }
-  ctx->cps = OC_CPS_FAILED;
+  ctx->store.cps = OC_CPS_FAILED;
   ctx->store.status |= OC_CLOUD_FAILURE;
   return -1;
 }
@@ -488,8 +487,7 @@ refresh_token(void *data)
   ctx->retry_refresh_token_count++;
   if (!is_refresh_token_retry_over(ctx)) {
     bool cannotConnect = true;
-    if (oc_string_to_endpoint(&ctx->store.ci_server, ctx->cloud_ep, NULL) ==
-          0 &&
+    if (conv_cloud_endpoint(ctx) == 0 &&
         cloud_access_refresh_access_token(
           ctx->cloud_ep, oc_string(ctx->store.uid),
           oc_string(ctx->store.refresh_token), ctx->device,

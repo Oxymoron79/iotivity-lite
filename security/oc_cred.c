@@ -41,7 +41,7 @@ OC_MEMB(creds, oc_sec_cred_t, OC_MAX_NUM_DEVICES *OC_MAX_NUM_SUBJECTS + 1);
 #ifdef OC_DYNAMIC_ALLOCATION
 #include "port/oc_assert.h"
 static oc_sec_creds_t *devices;
-#else /* OC_DYNAMIC_ALLOCATION */
+#else  /* OC_DYNAMIC_ALLOCATION */
 static oc_sec_creds_t devices[OC_MAX_NUM_DEVICES];
 #endif /* !OC_DYNAMIC_ALLOCATION */
 
@@ -84,9 +84,9 @@ oc_sec_get_cred_by_credid(int credid, size_t device)
   return NULL;
 }
 
-static bool
-unique_credid(int credid, bool roles_resource, oc_tls_peer_t *client,
-              size_t device)
+static oc_sec_cred_t *
+is_existing_cred(int credid, bool roles_resource, oc_tls_peer_t *client,
+                 size_t device)
 {
   oc_sec_cred_t *cred = NULL;
   (void)client;
@@ -100,11 +100,12 @@ unique_credid(int credid, bool roles_resource, oc_tls_peer_t *client,
   }
 #endif /* OC_PKI */
   while (cred != NULL) {
-    if (cred->credid == credid)
-      return false;
+    if (cred->credid == credid) {
+      break;
+    }
     cred = cred->next;
   }
-  return true;
+  return cred;
 }
 
 #if defined(OC_CLIENT) && defined(OC_PKI)
@@ -144,7 +145,7 @@ get_new_credid(bool roles_resource, oc_tls_peer_t *client, size_t device)
   int credid;
   do {
     credid = oc_random_value() >> 1;
-  } while (!unique_credid(credid, roles_resource, client, device));
+  } while (is_existing_cred(credid, roles_resource, client, device));
   return credid;
 }
 
@@ -352,26 +353,33 @@ oc_sec_add_new_cred(size_t device, bool roles_resource, oc_tls_peer_t *client,
   (void)publicdata_size;
   (void)get_device_uuid;
 #ifdef OC_PKI
-  uint8_t public_key[OC_KEYPAIR_PUBKEY_SIZE] = { 0 };
+  oc_string_t public_key;
+  memset(&public_key, 0, sizeof(oc_string_t));
+  int public_key_len = 0;
   if (credtype == OC_CREDTYPE_CERT &&
-      oc_certs_parse_public_key(publicdata, publicdata_size + 1, public_key) <
-        0) {
-    return -1;
+      (public_key_len = oc_certs_parse_public_key(
+         publicdata, publicdata_size + 1, &public_key)) < 0) {
+    goto add_new_cred_error;
   }
 
   if (roles_resource) {
     if (credusage != OC_CREDUSAGE_ROLE_CERT) {
-      return -1;
+      goto add_new_cred_error;
     }
     if (!client) {
-      return -1;
+      goto add_new_cred_error;
     }
-    if (memcmp(public_key, client->public_key, OC_KEYPAIR_PUBKEY_SIZE) != 0) {
-      return -1;
+    if (client->public_key.size > 0 &&
+        memcmp(oc_cast(public_key, uint8_t) + public_key.size -
+                 (size_t)public_key_len,
+               oc_cast(client->public_key, uint8_t) + client->public_key.size -
+                 (size_t)public_key_len,
+               (size_t)public_key_len) != 0) {
+      goto add_new_cred_error;
     }
     if (!check_uuid_from_cert_raw(publicdata_size + 1, publicdata,
                                   &client->uuid)) {
-      return -1;
+      goto add_new_cred_error;
     }
   }
 #endif /* OC_PKI */
@@ -381,7 +389,7 @@ oc_sec_add_new_cred(size_t device, bool roles_resource, oc_tls_peer_t *client,
 
   if (!subjectuuid) {
     if (credusage != OC_CREDUSAGE_ROLE_CERT) {
-      return -1;
+      goto add_new_cred_error;
     } else {
       subject.id[0] = '*';
     }
@@ -399,22 +407,47 @@ oc_sec_add_new_cred(size_t device, bool roles_resource, oc_tls_peer_t *client,
   if (credusage == OC_CREDUSAGE_IDENTITY_CERT && privatedata_size == 0) {
     kp = oc_sec_get_ecdsa_keypair(device);
     if (!kp) {
-      return -1;
+      goto add_new_cred_error;
     }
-    if (memcmp(kp->public_key, public_key, OC_KEYPAIR_PUBKEY_SIZE) != 0) {
-      return -1;
+    if (memcmp(kp->public_key,
+               oc_cast(public_key, uint8_t) + public_key.size -
+                 (size_t)public_key_len,
+               (size_t)public_key_len) != 0) {
+      goto add_new_cred_error;
     }
     if (!check_uuid_from_cert_raw(publicdata_size + 1, publicdata,
                                   get_device_uuid(device))) {
-      return -1;
+      goto add_new_cred_error;
     }
   }
 #endif /* OC_PKI */
 
-  if (!unique_credid(credid, roles_resource, client, device)) {
+  oc_sec_cred_t *existing =
+    is_existing_cred(credid, roles_resource, client, device);
+  if (existing) {
     if (!roles_resource) {
       /* remove duplicate cred, if one exists.  */
-      oc_sec_remove_cred_by_credid(credid, device);
+      if ((existing->credtype == credtype) &&
+          memcmp(&existing->subjectuuid, &subject, sizeof(oc_uuid_t)) == 0 &&
+          ((oc_string_len(existing->privatedata.data) == privatedata_size) &&
+           (memcmp(oc_string(existing->privatedata.data), privatedata,
+                   privatedata_size) == 0))
+#ifdef OC_PKI
+          && (existing->credusage == credusage) &&
+          ((oc_string_len(existing->publicdata.data) == publicdata_size) &&
+           (memcmp(oc_string(existing->publicdata.data), publicdata,
+                   publicdata_size) == 0))
+#endif /* OC_PKI */
+      ) {
+#ifdef OC_PKI
+        if (oc_string_len(public_key) > 0) {
+          oc_free_string(&public_key);
+        }
+#endif /* OC_PKI */
+        return credid;
+      } else {
+        oc_sec_remove_cred_by_credid(credid, device);
+      }
     }
 #ifdef OC_PKI
     else {
@@ -442,6 +475,9 @@ oc_sec_add_new_cred(size_t device, bool roles_resource, oc_tls_peer_t *client,
                 publicdata_size == oc_string_len(cred->publicdata.data) &&
                 memcmp(publicdata, oc_string(cred->publicdata.data),
                        publicdata_size) == 0) {
+              if (oc_string_len(public_key) > 0) {
+                oc_free_string(&public_key);
+              }
               return cred->credid;
             }
           }
@@ -458,6 +494,9 @@ oc_sec_add_new_cred(size_t device, bool roles_resource, oc_tls_peer_t *client,
       if ((oc_string_len(roles->publicdata.data) == publicdata_size) &&
           memcmp(oc_string(roles->publicdata.data), publicdata,
                  publicdata_size) == 0) {
+        if (oc_string_len(public_key) > 0) {
+          oc_free_string(&public_key);
+        }
         return roles->credid;
       }
       roles = roles->next;
@@ -474,7 +513,7 @@ oc_sec_add_new_cred(size_t device, bool roles_resource, oc_tls_peer_t *client,
     cred = oc_sec_allocate_cred(&subject, credtype, credusage, device);
   }
   if (!cred) {
-    return -1;
+    goto add_new_cred_error;
   }
 
 #ifdef OC_PKI
@@ -486,12 +525,12 @@ oc_sec_add_new_cred(size_t device, bool roles_resource, oc_tls_peer_t *client,
       } else {
         oc_sec_remove_cred(cred, device);
       }
-      return -1;
+      goto add_new_cred_error;
     }
 
     if (roles_resource && check_role_assertion(cred) < 0) {
       oc_sec_free_role(cred, client);
-      return -1;
+      goto add_new_cred_error;
     }
   }
 #endif /* OC_PKI */
@@ -512,14 +551,14 @@ oc_sec_add_new_cred(size_t device, bool roles_resource, oc_tls_peer_t *client,
         privatedata_encoding == OC_ENCODING_BASE64) {
       if (privatedata_size > 64) {
         oc_sec_remove_cred(cred, device);
-        return -1;
+        goto add_new_cred_error;
       }
       uint8_t key[64];
       memcpy(key, privatedata, privatedata_size);
       int key_size = oc_base64_decode(key, privatedata_size);
       if (key_size < 0) {
         oc_sec_remove_cred(cred, device);
-        return -1;
+        goto add_new_cred_error;
       }
       oc_new_string(&cred->privatedata.data, (const char *)key, key_size);
       privatedata_encoding = OC_ENCODING_RAW;
@@ -576,8 +615,19 @@ oc_sec_add_new_cred(size_t device, bool roles_resource, oc_tls_peer_t *client,
 #endif /* OC_PKI && OC_CLIENT */
   }
 #endif /* OC_PKI */
-
+#ifdef OC_PKI
+  if (oc_string_len(public_key) > 0) {
+    oc_free_string(&public_key);
+  }
+#endif /* OC_PKI */
   return cred->credid;
+add_new_cred_error:
+#ifdef OC_PKI
+  if (oc_string_len(public_key) > 0) {
+    oc_free_string(&public_key);
+  }
+#endif /* OC_PKI */
+  return -1;
 }
 
 const char *
@@ -635,12 +685,15 @@ oc_cred_read_encoding(oc_sec_encoding_t encoding)
 
 #ifdef OC_PKI
 static void
-oc_sec_encode_roles(oc_tls_peer_t *client, size_t device)
+oc_sec_encode_roles(oc_tls_peer_t *client, size_t device,
+                    oc_interface_mask_t iface_mask)
 {
   oc_sec_cred_t *cr = oc_sec_get_roles(client);
   oc_rep_start_root_object();
-  oc_process_baseline_interface(
-    oc_core_get_resource_by_index(OCF_SEC_ROLES, device));
+  if (iface_mask & OC_IF_BASELINE) {
+    oc_process_baseline_interface(
+      oc_core_get_resource_by_index(OCF_SEC_ROLES, device));
+  }
   oc_rep_set_array(root, roles);
   while (cr != NULL) {
     oc_rep_object_array_start_item(roles);
@@ -680,13 +733,16 @@ oc_sec_encode_roles(oc_tls_peer_t *client, size_t device)
 #endif /* OC_PKI */
 
 void
-oc_sec_encode_cred(bool persist, size_t device)
+oc_sec_encode_cred(bool persist, size_t device, oc_interface_mask_t iface_mask,
+                   bool to_storage)
 {
   oc_sec_cred_t *cr = oc_list_head(devices[device].creds);
   char uuid[OC_UUID_LEN];
   oc_rep_start_root_object();
-  oc_process_baseline_interface(
-    oc_core_get_resource_by_index(OCF_SEC_CRED, device));
+  if (to_storage || iface_mask & OC_IF_BASELINE) {
+    oc_process_baseline_interface(
+      oc_core_get_resource_by_index(OCF_SEC_CRED, device));
+  }
   oc_rep_set_array(root, creds);
   while (cr != NULL) {
     oc_rep_object_array_start_item(creds);
@@ -934,7 +990,7 @@ oc_sec_decode_cred(oc_rep_t *rep, oc_sec_cred_t **owner, bool from_storage,
                   || (len == 10 &&
                       memcmp(oc_string(cred->name), "publicdata", 10) == 0)
 #endif /* OC_PKI */
-                    ) {
+              ) {
                 size_t *size = 0;
                 char **pubpriv = 0;
                 oc_sec_encoding_t *encoding = 0;
@@ -992,9 +1048,8 @@ oc_sec_decode_cred(oc_rep_t *rep, oc_sec_cred_t **owner, bool from_storage,
                   if (len == 4 &&
                       memcmp(oc_string(data->name), "role", 4) == 0) {
                     role = oc_string(data->value.string);
-                  } else if (len == 9 &&
-                             memcmp(oc_string(data->name), "authority", 9) ==
-                               0) {
+                  } else if (len == 9 && memcmp(oc_string(data->name),
+                                                "authority", 9) == 0) {
                     authority = oc_string(data->value.string);
                   }
                   data = data->next;
@@ -1037,12 +1092,14 @@ oc_sec_decode_cred(oc_rep_t *rep, oc_sec_cred_t **owner, bool from_storage,
             oc_sec_cred_t *cr = oc_sec_get_cred_by_credid(credid, device);
             if (cr) {
               cr->owner_cred = owner_cred;
-            }
-            /* Obtain a handle to the owner credential entry where that applies
-             */
-            if (credtype == OC_CREDTYPE_PSK && privatedata_size == 0 && owner) {
-              *owner = cr;
-              (*owner)->owner_cred = true;
+              /* Obtain a handle to the owner credential entry where that
+               * applies
+               */
+              if (credtype == OC_CREDTYPE_PSK && privatedata_size == 0 &&
+                  owner) {
+                *owner = cr;
+                (*owner)->owner_cred = true;
+              }
             }
           }
           creds_array = creds_array->next;
@@ -1060,7 +1117,6 @@ oc_sec_decode_cred(oc_rep_t *rep, oc_sec_cred_t **owner, bool from_storage,
 void
 get_cred(oc_request_t *request, oc_interface_mask_t iface_mask, void *data)
 {
-  (void)iface_mask;
   (void)data;
   bool roles_resource = false;
 #ifdef OC_PKI
@@ -1071,12 +1127,12 @@ get_cred(oc_request_t *request, oc_interface_mask_t iface_mask, void *data)
   }
 #endif /* OC_PKI */
   if (!roles_resource) {
-    oc_sec_encode_cred(false, request->resource->device);
+    oc_sec_encode_cred(false, request->resource->device, iface_mask, false);
   }
 #ifdef OC_PKI
   else {
     client = oc_tls_get_peer(request->origin);
-    oc_sec_encode_roles(client, request->resource->device);
+    oc_sec_encode_roles(client, request->resource->device, iface_mask);
   }
 #endif /* OC_PKI */
   oc_send_response(request, OC_STATUS_OK);
