@@ -50,6 +50,9 @@
 
 #if defined(OC_COLLECTIONS) && defined(OC_SERVER)
 #include "oc_collection.h"
+#ifdef OC_COLLECTIONS_IF_CREATE
+#include "oc_resource_factory.h"
+#endif /* OC_COLLECTIONS_IF_CREATE */
 #endif /* OC_COLLECTIONS && OC_SERVER */
 
 #ifdef OC_SECURITY
@@ -58,6 +61,9 @@
 #include "security/oc_roles.h"
 #include "security/oc_tls.h"
 #include "security/oc_audit.h"
+#ifdef OC_OSCORE
+#include "security/oc_oscore.h"
+#endif /* OC_OSCORE */
 #endif /* OC_SECURITY */
 
 #ifdef OC_SERVER
@@ -245,6 +251,9 @@ start_processes(void)
 
 #ifdef OC_SECURITY
   oc_process_start(&oc_tls_handler, NULL);
+#ifdef OC_OSCORE
+  oc_process_start(&oc_oscore_handler, NULL);
+#endif /* OC_OSCORE */
 #endif /* OC_SECURITY */
 
   oc_process_start(&oc_network_events, NULL);
@@ -265,6 +274,9 @@ stop_processes(void)
   oc_process_exit(&coap_engine);
 
 #ifdef OC_SECURITY
+#ifdef OC_OSCORE
+  oc_process_exit(&oc_oscore_handler);
+#endif /* OC_OSCORE */
   oc_process_exit(&oc_tls_handler);
 #endif /* OC_SECURITY */
 
@@ -344,10 +356,29 @@ oc_ri_delete_resource(oc_resource_t *resource)
   if (!resource)
     return false;
 
+  /**
+   * Prevent double deallocation: oc_rt_factory_free_created_resource
+   * called below will invoke the delete handler of the resource which will
+   * invoke this function again. We use the list of resources to check
+   * whether the resource exists and when it doesn't we assume that
+   * a deallocation of the resource was already invoked and skip this one.
+   */
+  if (oc_list_remove2(app_resources, resource) == NULL) {
+    return true;
+  }
+
   if (resource->num_observers > 0) {
     coap_remove_observer_by_resource(resource);
   }
-  oc_list_remove(app_resources, resource);
+
+#if defined(OC_SERVER) && defined(OC_COLLECTIONS) && \
+  defined(OC_COLLECTIONS_IF_CREATE)
+  oc_rt_created_t* rtc = oc_rt_get_factory_create_for_resource(resource);
+  if (rtc != NULL) {
+    oc_rt_factory_free_created_resource(rtc, rtc->rf);
+  }
+#endif
+
   oc_ri_free_resource_properties(resource);
   oc_memb_free(&app_resources_s, resource);
   return true;
@@ -381,12 +412,8 @@ void
 oc_ri_free_resource_properties(oc_resource_t *resource)
 {
   if (resource) {
-    if (oc_string_len(resource->name) > 0) {
-      oc_free_string(&(resource->name));
-    }
-    if (oc_string_len(resource->uri) > 0) {
-      oc_free_string(&(resource->uri));
-    }
+    oc_free_string(&(resource->name));
+    oc_free_string(&(resource->uri));
     if (oc_string_array_get_allocated_size(resource->types) > 0) {
       oc_free_string_array(&(resource->types));
     }
@@ -817,13 +844,6 @@ oc_ri_invoke_coap_entity_handler(void *request, void *response, uint8_t *buffer,
         entity_too_large = true;
       bad_request = true;
     }
-
-#if defined(OC_BLOCK_WISE)
-    /* Free request_state cause it isn't used any more
-     */
-    oc_blockwise_free_request_buffer(*request_state);
-    *request_state = NULL;
-#endif
   }
 
   oc_resource_t *resource, *cur_resource = NULL;
@@ -902,13 +922,13 @@ oc_ri_invoke_coap_entity_handler(void *request, void *response, uint8_t *buffer,
                         uri_query_len);
         }
         response_buffer.buffer = (*response_state)->buffer;
-        response_buffer.buffer_size = (uint16_t)OC_MAX_APP_DATA_SIZE;
+        response_buffer.buffer_size = OC_MAX_APP_DATA_SIZE;
       }
     }
   }
 #else  /* OC_BLOCK_WISE */
   response_buffer.buffer = buffer;
-  response_buffer.buffer_size = (uint16_t)OC_BLOCK_SIZE;
+  response_buffer.buffer_size = OC_BLOCK_SIZE;
 #endif /* !OC_BLOCK_WISE */
 
   if (cur_resource && !bad_request) {
@@ -961,6 +981,12 @@ oc_ri_invoke_coap_entity_handler(void *request, void *response, uint8_t *buffer,
       }
     }
   }
+
+
+#if defined(OC_BLOCK_WISE)
+  oc_blockwise_free_request_buffer(*request_state);
+  *request_state = NULL;
+#endif
 
   if (request_obj.request_payload) {
     /* To the extent that the request payload was parsed, free the
@@ -1202,9 +1228,7 @@ free_client_cb(oc_client_cb_t *cb)
   oc_blockwise_scrub_buffers_for_client_cb(cb);
 #endif /* OC_BLOCK_WISE */
   oc_free_string(&cb->uri);
-  if (oc_string_len(cb->query)) {
-    oc_free_string(&cb->query);
-  }
+  oc_free_string(&cb->query);
   oc_memb_free(&client_cbs_s, cb);
 }
 
@@ -1364,6 +1388,17 @@ oc_ri_invoke_client_cb(void *response, oc_client_cb_t *cb,
 #else  /* OC_BLOCK_WISE */
   coap_get_header_observe(pkt, (uint32_t *)&client_response.observe_option);
 #endif /* !OC_BLOCK_WISE */
+
+#if defined(OC_OSCORE) && defined(OC_SECURITY)
+  if (client_response.observe_option > 1) {
+    uint64_t notification_num = 0;
+    oscore_read_piv(endpoint->piv, endpoint->piv_len, &notification_num);
+    if (notification_num < cb->notification_num) {
+      return true;
+    }
+    cb->notification_num = notification_num;
+  }
+#endif /* OC_OSCORE && OC_SECURITY */
 
   bool separate = false;
 
@@ -1580,7 +1615,7 @@ oc_ri_shutdown(void)
 #ifdef OC_COLLECTIONS
   oc_collection_t *collection = oc_collection_get_all(), *next;
   while (collection != NULL) {
-    next = collection->next;
+    next = (oc_collection_t *)collection->res.next;
     oc_collection_free(collection);
     collection = next;
   }

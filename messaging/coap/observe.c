@@ -404,7 +404,8 @@ coap_notify_collection_observers(oc_resource_t *resource,
     }
     coap_set_header_content_format(notification, APPLICATION_VND_OCF_CBOR);
     coap_set_token(notification, obs->token, obs->token_len);
-    transaction = coap_new_transaction(coap_get_mid(), &obs->endpoint);
+    transaction = coap_new_transaction(coap_get_mid(), obs->token,
+                                       obs->token_len, &obs->endpoint);
     if (transaction) {
       obs->last_mid = transaction->mid;
       notification->mid = transaction->mid;
@@ -441,7 +442,7 @@ coap_notify_collection_baseline(oc_collection_t *collection)
   response.separate_response = 0;
   oc_response_buffer_t response_buffer;
   response_buffer.buffer = buffer;
-  response_buffer.buffer_size = (uint16_t)OC_MAX_APP_DATA_SIZE;
+  response_buffer.buffer_size = OC_MAX_APP_DATA_SIZE;
   response.response_buffer = &response_buffer;
   request.response = &response;
   request.request_payload = NULL;
@@ -477,7 +478,7 @@ coap_notify_collection_batch(oc_collection_t *collection)
   response.separate_response = 0;
   oc_response_buffer_t response_buffer;
   response_buffer.buffer = buffer;
-  response_buffer.buffer_size = (uint16_t)OC_MAX_APP_DATA_SIZE;
+  response_buffer.buffer_size = OC_MAX_APP_DATA_SIZE;
   response.response_buffer = &response_buffer;
   request.response = &response;
   request.request_payload = NULL;
@@ -513,7 +514,7 @@ coap_notify_collection_links_list(oc_collection_t *collection)
   response.separate_response = 0;
   oc_response_buffer_t response_buffer;
   response_buffer.buffer = buffer;
-  response_buffer.buffer_size = (uint16_t)OC_MAX_APP_DATA_SIZE;
+  response_buffer.buffer_size = OC_MAX_APP_DATA_SIZE;
   response.response_buffer = &response_buffer;
   request.response = &response;
   request.request_payload = NULL;
@@ -552,7 +553,7 @@ coap_notify_collections(oc_resource_t *resource)
   response.separate_response = 0;
   oc_response_buffer_t response_buffer;
   response_buffer.buffer = buffer;
-  response_buffer.buffer_size = (uint16_t)OC_MAX_APP_DATA_SIZE;
+  response_buffer.buffer_size = OC_MAX_APP_DATA_SIZE;
   response.response_buffer = &response_buffer;
   request.response = &response;
   request.request_payload = NULL;
@@ -561,7 +562,7 @@ coap_notify_collections(oc_resource_t *resource)
   oc_collection_t *collection = NULL;
 
   for (collection = oc_get_next_collection_with_link(resource, NULL);
-       collection != NULL && collection->num_observers > 0;
+       collection != NULL && collection->res.num_observers > 0;
        collection = oc_get_next_collection_with_link(resource, collection)) {
     OC_DBG("coap_notify_collections: Issue GET request to collection for "
            "resource");
@@ -603,8 +604,8 @@ coap_remove_observers_on_dos_change(size_t device, bool reset)
                               SERVICE_UNAVAILABLE_5_03, 0);
       }
       coap_set_token(notification, obs->token, obs->token_len);
-      coap_transaction_t *transaction =
-        coap_new_transaction(coap_get_mid(), &obs->endpoint);
+      coap_transaction_t *transaction = coap_new_transaction(
+        coap_get_mid(), obs->token, obs->token_len, &obs->endpoint);
       if (transaction) {
         notification->mid = transaction->mid;
         transaction->message->length =
@@ -668,7 +669,7 @@ coap_notify_observers(oc_resource_t *resource,
       OC_DBG("coap_notify_observers: Issue GET request to resource %s\n\n",
              oc_string(resource->uri));
       response_buffer.buffer = buffer;
-      response_buffer.buffer_size = (uint16_t)OC_MAX_APP_DATA_SIZE;
+      response_buffer.buffer_size = OC_MAX_APP_DATA_SIZE;
       response.response_buffer = &response_buffer;
       request.resource = resource;
       request.response = &response;
@@ -827,7 +828,8 @@ coap_notify_observers(oc_resource_t *resource,
                                            response_buf->content_format);
           }
           coap_set_token(notification, obs->token, obs->token_len);
-          transaction = coap_new_transaction(coap_get_mid(), &obs->endpoint);
+          transaction = coap_new_transaction(coap_get_mid(), obs->token,
+                                             obs->token_len, &obs->endpoint);
           if (transaction) {
             obs->last_mid = transaction->mid;
             notification->mid = transaction->mid;
