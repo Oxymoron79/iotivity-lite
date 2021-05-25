@@ -331,6 +331,16 @@ target_compile_definitions(simpleserver PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_SERV
 target_link_libraries(simpleserver PUBLIC server-static Threads::Threads m rt)
 install(TARGETS simpleserver DESTINATION ${CMAKE_INSTALL_BINDIR})
 
+add_executable(secure_mcast_server1 ../../apps/secure_mcast_server1.c)
+target_compile_definitions(secure_mcast_server1 PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_SERVER")
+target_link_libraries(secure_mcast_server1 PUBLIC server-static Threads::Threads m rt)
+install(TARGETS secure_mcast_server1 DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+add_executable(secure_mcast_server2 ../../apps/secure_mcast_server2.c)
+target_compile_definitions(secure_mcast_server2 PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_SERVER")
+target_link_libraries(secure_mcast_server2 PUBLIC server-static Threads::Threads m rt)
+install(TARGETS secure_mcast_server2 DESTINATION ${CMAKE_INSTALL_BINDIR})
+
 add_executable(simpleserver_pki ../../apps/simpleserver_pki.c)
 target_compile_definitions(simpleserver_pki PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_SERVER")
 target_link_libraries(simpleserver_pki PUBLIC server-static Threads::Threads m rt)
@@ -340,6 +350,11 @@ add_executable(simpleclient ../../apps/simpleclient.c)
 target_compile_definitions(simpleclient PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_CLIENT")
 target_link_libraries(simpleclient PUBLIC client-static Threads::Threads m rt)
 install(TARGETS simpleclient DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+add_executable(secure_mcast_client ../../apps/secure_mcast_client.c)
+target_compile_definitions(secure_mcast_client PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_CLIENT")
+target_link_libraries(secure_mcast_client PUBLIC client-static Threads::Threads m rt)
+install(TARGETS secure_mcast_client DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 add_executable(introspectionclient ../../apps/introspectionclient.c)
 target_compile_definitions(introspectionclient PRIVATE ${PUBLIC_COMPILER_DEFS} "OC_CLIENT")
