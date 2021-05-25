@@ -6,6 +6,7 @@ option(CREATE "Build with support for the create interface in collections." OFF)
 option(DYNAMIC "Build with dynamic resource creation." ON)
 option(SECURE "Build with security layer." ON)
 option(PKI "Build with private key infrastructure." ON)
+option(OSCORE "Build with OSCORE support." ON)
 option(IDD "Build with introspection data support." ON)
 option(CLOUD "Build with cloud support." OFF)
 option(IPV4 "Build with IPv4 support." OFF)
@@ -114,6 +115,7 @@ if(SECURE)
 
   file(GLOB SRC_SECURE
     ../../security/oc_[a-n]*.c
+    ../../security/oc_oscore*.c
     ../../security/oc_[p-z]*.c
   )
   list(APPEND SRC_SERVER ${SRC_SECURE})
@@ -145,6 +147,9 @@ endif()
 if(SECURE)
   list(APPEND PRIVATE_COMPILER_DEFS "__OC_RANDOM")
   list(APPEND PUBLIC_COMPILER_DEFS "OC_SECURITY")
+endif()
+if(OSCORE)
+  list(APPEND PUBLIC_COMPILER_DEFS "OC_OSCORE")
 endif()
 if(DYNAMIC)
   list(APPEND PUBLIC_COMPILER_DEFS "OC_DYNAMIC_ALLOCATION")
