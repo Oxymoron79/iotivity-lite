@@ -234,7 +234,10 @@ set_property(TARGET client-server-shared PROPERTY SOVERSION ${PROJECT_VERSION_MA
 install(TARGETS
   client-static client-shared
   server-static server-shared
-  client-server-static client-server-shared)
+  client-server-static client-server-shared
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
 
 # Install header files
 install(DIRECTORY ../../include/
